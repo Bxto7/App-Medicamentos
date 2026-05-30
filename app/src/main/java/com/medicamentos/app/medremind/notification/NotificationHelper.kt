@@ -9,14 +9,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.medicamentos.app.medremind.MainActivity
 import com.medicamentos.app.medremind.R
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class NotificationHelper @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_ID = "medication_reminders"
         const val CHANNEL_NAME = "Recordatorios de medicamentos"

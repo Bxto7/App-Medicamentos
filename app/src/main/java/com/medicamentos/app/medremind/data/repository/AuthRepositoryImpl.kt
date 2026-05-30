@@ -10,9 +10,8 @@ import com.medicamentos.app.medremind.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 import java.security.MessageDigest
 import java.util.UUID
-import javax.inject.Inject
 
-class AuthRepositoryImpl @Inject constructor(
+class AuthRepositoryImpl(
     private val usuarioDao: UsuarioDao,
     private val sessionManager: SessionManager
 ) : AuthRepository {

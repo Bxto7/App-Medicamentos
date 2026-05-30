@@ -12,9 +12,8 @@ import com.medicamentos.app.medremind.domain.repository.TomaRepository
 import com.medicamentos.app.medremind.domain.repository.TratamientoRepository
 import kotlinx.coroutines.flow.Flow
 import java.util.Calendar
-import javax.inject.Inject
 
-class LoginUseCase @Inject constructor(private val repo: AuthRepository) {
+class LoginUseCase(private val repo: AuthRepository) {
     suspend operator fun invoke(email: String, password: String): Result<Usuario> {
         if (email.isBlank()) return Result.failure(Exception("Ingresa tu correo"))
         if (password.isBlank()) return Result.failure(Exception("Ingresa tu contraseña"))
@@ -22,11 +21,11 @@ class LoginUseCase @Inject constructor(private val repo: AuthRepository) {
     }
 }
 
-class LogoutUseCase @Inject constructor(private val repo: AuthRepository) {
+class LogoutUseCase(private val repo: AuthRepository) {
     suspend operator fun invoke() = repo.logout()
 }
 
-class RegisterUseCase @Inject constructor(private val repo: AuthRepository) {
+class RegisterUseCase(private val repo: AuthRepository) {
     suspend operator fun invoke(
         nombre: String,
         email: String,
@@ -45,12 +44,12 @@ class RegisterUseCase @Inject constructor(private val repo: AuthRepository) {
     }
 }
 
-class ObtenerPacientesUseCase @Inject constructor(private val repo: PacienteRepository) {
+class ObtenerPacientesUseCase(private val repo: PacienteRepository) {
     operator fun invoke(medicoId: String): Flow<List<Paciente>> = repo.getPacientesByMedico(medicoId)
     fun buscar(medicoId: String, query: String): Flow<List<Paciente>> = repo.searchPacientes(medicoId, query)
 }
 
-class ObtenerTomasDelDiaUseCase @Inject constructor(private val repo: TomaRepository) {
+class ObtenerTomasDelDiaUseCase(private val repo: TomaRepository) {
     operator fun invoke(pacienteId: String): Flow<List<TomaProgramada>> {
         val cal = Calendar.getInstance()
         cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
@@ -61,16 +60,16 @@ class ObtenerTomasDelDiaUseCase @Inject constructor(private val repo: TomaReposi
     }
 }
 
-class MarcarTomaUseCase @Inject constructor(private val repo: TomaRepository) {
+class MarcarTomaUseCase(private val repo: TomaRepository) {
     suspend operator fun invoke(toma: TomaProgramada, estado: EstadoToma) =
         repo.marcarToma(toma.id, toma.tratamientoId, toma.pacienteId, toma.medicamentoNombre, estado)
 }
 
-class ObtenerHistorialUseCase @Inject constructor(private val repo: TomaRepository) {
+class ObtenerHistorialUseCase(private val repo: TomaRepository) {
     operator fun invoke(pacienteId: String): Flow<List<RegistroToma>> = repo.getHistorial(pacienteId)
 }
 
-class AgregarTratamientoUseCase @Inject constructor(private val repo: TratamientoRepository) {
+class AgregarTratamientoUseCase(private val repo: TratamientoRepository) {
     suspend operator fun invoke(
         pacienteId: String,
         medicamentoId: String,

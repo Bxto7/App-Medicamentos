@@ -7,13 +7,9 @@ import android.content.Intent
 import android.os.Build
 import com.medicamentos.app.medremind.data.local.dao.TomaProgramadaDao
 import com.medicamentos.app.medremind.data.local.entity.TomaProgramadaEntity
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class NotificationScheduler @Inject constructor(
-    @ApplicationContext private val context: Context,
+class NotificationScheduler(
+    private val context: Context,
     private val tomaProgramadaDao: TomaProgramadaDao
 ) {
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager

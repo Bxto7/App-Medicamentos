@@ -12,9 +12,8 @@ import com.medicamentos.app.medremind.domain.repository.TomaRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
-import javax.inject.Inject
 
-class TomaRepositoryImpl @Inject constructor(
+class TomaRepositoryImpl(
     private val tomaProgramadaDao: TomaProgramadaDao,
     private val registroTomaDao: RegistroTomaDao,
     private val tratamientoDao: TratamientoDao

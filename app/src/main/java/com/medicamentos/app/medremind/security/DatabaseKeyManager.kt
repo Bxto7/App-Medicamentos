@@ -4,15 +4,9 @@ import android.content.Context
 import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.SecureRandom
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class DatabaseKeyManager @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class DatabaseKeyManager(private val context: Context) {
     companion object {
         private const val KEY_PREF_FILE = "medremind_db_prefs"
         private const val KEY_DB_PASSPHRASE = "db_passphrase_v1"

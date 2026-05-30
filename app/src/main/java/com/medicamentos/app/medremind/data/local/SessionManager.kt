@@ -7,18 +7,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.medicamentos.app.medremind.domain.model.Rol
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
-import javax.inject.Singleton
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "session")
 
-@Singleton
-class SessionManager @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class SessionManager(private val context: Context) {
     private val KEY_USER_ID = stringPreferencesKey("user_id")
     private val KEY_ROL = stringPreferencesKey("rol")
     private val KEY_NOMBRE = stringPreferencesKey("nombre")

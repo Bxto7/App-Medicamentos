@@ -18,9 +18,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.Calendar
 import java.util.UUID
-import javax.inject.Inject
 
-class PacienteRepositoryImpl @Inject constructor(
+class PacienteRepositoryImpl(
     private val pacienteDao: PacienteDao
 ) : PacienteRepository {
     override fun getPacientesByMedico(medicoId: String): Flow<List<Paciente>> =
@@ -36,14 +35,14 @@ class PacienteRepositoryImpl @Inject constructor(
         pacienteDao.countByMedico(medicoId)
 }
 
-class MedicamentoRepositoryImpl @Inject constructor(
+class MedicamentoRepositoryImpl(
     private val medicamentoDao: MedicamentoDao
 ) : MedicamentoRepository {
     override fun getAll(): Flow<List<Medicamento>> =
         medicamentoDao.getAll().map { list -> list.map { it.toDomain() } }
 }
 
-class TratamientoRepositoryImpl @Inject constructor(
+class TratamientoRepositoryImpl(
     private val tratamientoDao: TratamientoDao,
     private val tomaProgramadaDao: TomaProgramadaDao
 ) : TratamientoRepository {
