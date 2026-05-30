@@ -158,11 +158,15 @@ fun AddTreatmentScreen(
 
             Text("Horarios (HH:mm)", style = MaterialTheme.typography.labelLarge)
             state.horarios.forEachIndexed { idx, hora ->
+                val horaValida = hora.isEmpty() || hora.matches(Regex("^([01]\\d|2[0-3]):[0-5]\\d$"))
                 OutlinedTextField(
                     value = hora,
                     onValueChange = { viewModel.updateHorario(idx, it) },
                     label = { Text("Horario ${idx + 1}") },
+                    placeholder = { Text("08:00") },
                     singleLine = true,
+                    isError = hora.isNotEmpty() && !horaValida,
+                    supportingText = { if (hora.isNotEmpty() && !horaValida) Text("Formato inválido. Usa HH:mm (ej: 08:00)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -210,12 +214,15 @@ fun AddTreatmentScreen(
                 ) { DatePicker(state = dateFinState) }
             }
 
+            val stockNum = state.stockInicial.toIntOrNull()
             OutlinedTextField(
                 value = state.stockInicial,
-                onValueChange = viewModel::onStockChange,
+                onValueChange = { input -> if (input.isEmpty() || input.toIntOrNull() != null) viewModel.onStockChange(input) },
                 label = { Text("Stock inicial (unidades)") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
+                isError = stockNum != null && stockNum < 0,
+                supportingText = { if (stockNum != null && stockNum < 0) Text("El stock no puede ser negativo") },
                 modifier = Modifier.fillMaxWidth()
             )
 

@@ -85,7 +85,7 @@ fun DashboardScreen(viewModel: AdminViewModel, onSelectPaciente: () -> Unit = {}
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Text("Bienvenido, ${state.medicoNombre}", style = MaterialTheme.typography.headlineMedium)
+            Text("Bienvenido, ${state.medicoNombre.ifBlank { "Médico" }}", style = MaterialTheme.typography.headlineMedium)
             Text("Panel de control", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
         }
@@ -184,7 +184,7 @@ fun PacienteCard(paciente: Paciente, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                Text(paciente.nombre.first().uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text((paciente.nombre.firstOrNull() ?: '?').uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -212,7 +212,17 @@ fun PacienteRowSimple(paciente: Paciente, onClick: () -> Unit) {
 @Composable
 fun PatientDetailScreen(viewModel: AdminViewModel, onAddTreatment: () -> Unit, onBack: () -> Unit = {}) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val paciente = state.selectedPaciente ?: return
+    val paciente = state.selectedPaciente
+    if (paciente == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(Icons.Default.Person, null, Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                Text("Selecciona un paciente de la lista", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Button(onClick = onBack) { Text("Ir a Pacientes") }
+            }
+        }
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -238,7 +248,7 @@ fun PatientDetailScreen(viewModel: AdminViewModel, onAddTreatment: () -> Unit, o
                 Card(Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                            Text(paciente.nombre.first().uppercase(), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text((paciente.nombre.firstOrNull() ?: '?').uppercase(), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
@@ -382,14 +392,17 @@ fun AddMedicamentoDialog(onDismiss: () -> Unit, onConfirm: (String, String, Stri
         title = { Text("Nuevo medicamento") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = dosis, onValueChange = { dosis = it }, label = { Text("Dosis * (ej: 500mg)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = via, onValueChange = { via = it }, label = { Text("Vía * (ej: oral, IV)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = instrucciones, onValueChange = { instrucciones = it }, label = { Text("Instrucciones (opcional)") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = nombre, onValueChange = { if (it.length <= 100) nombre = it }, label = { Text("Nombre *") }, singleLine = true, isError = nombre.isBlank(), supportingText = { if (nombre.isBlank()) Text("Requerido") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = dosis, onValueChange = { if (it.length <= 50) dosis = it }, label = { Text("Dosis * (ej: 500mg)") }, singleLine = true, isError = dosis.isBlank(), supportingText = { if (dosis.isBlank()) Text("Requerido") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = via, onValueChange = { if (it.length <= 50) via = it }, label = { Text("Vía * (ej: oral, IV)") }, singleLine = true, isError = via.isBlank(), supportingText = { if (via.isBlank()) Text("Requerido") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = instrucciones, onValueChange = { if (it.length <= 300) instrucciones = it }, label = { Text("Instrucciones (opcional)") }, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
-            Button(onClick = { if (nombre.isNotBlank() && dosis.isNotBlank() && via.isNotBlank()) onConfirm(nombre, dosis, via, instrucciones) }) {
+            Button(
+                onClick = { if (nombre.isNotBlank() && dosis.isNotBlank() && via.isNotBlank()) onConfirm(nombre, dosis, via, instrucciones) },
+                enabled = nombre.isNotBlank() && dosis.isNotBlank() && via.isNotBlank()
+            ) {
                 Text("Guardar")
             }
         },
@@ -449,7 +462,7 @@ fun ReportsScreen(viewModel: AdminViewModel) {
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                        Text(p.nombre.first().uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text((p.nombre.firstOrNull() ?: '?').uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
@@ -510,14 +523,16 @@ fun EditNombreDialog(nombreActual: String, onDismiss: () -> Unit, onConfirm: (St
         text = {
             OutlinedTextField(
                 value = nombre,
-                onValueChange = { nombre = it },
+                onValueChange = { if (it.length <= 100) nombre = it },
                 label = { Text("Nombre completo") },
                 singleLine = true,
+                isError = nombre.trim().isEmpty(),
+                supportingText = { if (nombre.trim().isEmpty()) Text("El nombre no puede estar vacío") },
                 modifier = Modifier.fillMaxWidth()
             )
         },
         confirmButton = {
-            Button(onClick = { if (nombre.isNotBlank()) onConfirm(nombre) }) { Text("Guardar") }
+            Button(onClick = { if (nombre.trim().isNotBlank()) onConfirm(nombre.trim()) }, enabled = nombre.trim().isNotBlank()) { Text("Guardar") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
@@ -554,8 +569,10 @@ private fun exportarPdf(context: android.content.Context, pacientes: List<Pacien
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(shareIntent, "Compartir reporte"))
+        android.widget.Toast.makeText(context, "PDF generado correctamente", android.widget.Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
         e.printStackTrace()
+        android.widget.Toast.makeText(context, "Error al generar PDF: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
     } finally {
         pdfDocument.close()
     }

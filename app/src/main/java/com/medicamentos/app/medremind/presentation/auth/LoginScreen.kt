@@ -97,17 +97,20 @@ fun LoginScreen(viewModel: AuthViewModel, onCrearCuenta: () -> Unit) {
             Text("Control de Diabetes", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(40.dp))
 
+            val emailValido = uiState.email.isBlank() || android.util.Patterns.EMAIL_ADDRESS.matcher(uiState.email).matches()
             OutlinedTextField(
                 value = uiState.email,
-                onValueChange = viewModel::onEmailChange,
+                onValueChange = { viewModel.onEmailChange(it.trim()) },
                 label = { Text("Correo electrónico") },
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                isError = !emailValido,
+                supportingText = { if (!emailValido) Text("Correo electrónico inválido") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
 
             OutlinedTextField(
                 value = uiState.password,
@@ -145,7 +148,7 @@ fun LoginScreen(viewModel: AuthViewModel, onCrearCuenta: () -> Unit) {
 
             Button(
                 onClick = { focusManager.clearFocus(); viewModel.login() },
-                enabled = !uiState.isLoading,
+                enabled = !uiState.isLoading && uiState.email.isNotBlank() && uiState.password.isNotBlank() && emailValido,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
                 if (uiState.isLoading) {
