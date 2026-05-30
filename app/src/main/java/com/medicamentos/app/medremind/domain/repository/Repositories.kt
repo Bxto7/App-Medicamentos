@@ -3,6 +3,7 @@ package com.medicamentos.app.medremind.domain.repository
 import com.medicamentos.app.medremind.domain.model.EstadoToma
 import com.medicamentos.app.medremind.domain.model.Medicamento
 import com.medicamentos.app.medremind.domain.model.Paciente
+import com.medicamentos.app.medremind.domain.model.PacienteAsociable
 import com.medicamentos.app.medremind.domain.model.RegistroToma
 import com.medicamentos.app.medremind.domain.model.Rol
 import com.medicamentos.app.medremind.domain.model.TomaProgramada
@@ -34,6 +35,14 @@ interface PacienteRepository {
     fun countPacientes(medicoId: String): Flow<Int>
 }
 
+/** Gestión de la relación N:N médico ↔ paciente (Requerimiento 1). */
+interface AsociacionRepository {
+    /** Todos los usuarios con rol PACIENTE, marcando los ya asociados al médico. */
+    fun getPacientesAsociables(medicoId: String): Flow<List<PacienteAsociable>>
+    suspend fun asociar(medicoId: String, pacienteIds: List<String>)
+    suspend fun desasociar(medicoId: String, pacienteId: String)
+}
+
 interface MedicamentoRepository {
     fun getAll(): Flow<List<Medicamento>>
     suspend fun add(nombre: String, dosis: String, via: String, instrucciones: String)
@@ -51,7 +60,9 @@ interface TratamientoRepository {
         fechaInicio: Long,
         fechaFin: Long?,
         stockInicial: Int,
-        instrucciones: String
+        instrucciones: String,
+        medicoId: String,
+        medicoNombre: String
     ): List<TomaProgramada>
 }
 

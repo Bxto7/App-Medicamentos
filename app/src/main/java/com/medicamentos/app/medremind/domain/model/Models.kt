@@ -41,7 +41,20 @@ data class Tratamiento(
     val fechaInicio: Long,
     val fechaFin: Long?,
     val stockRestante: Int,
-    val instrucciones: String
+    val instrucciones: String,
+    val medicoId: String = "",
+    val medicoNombre: String = ""
+)
+
+/**
+ * Usuario con rol PACIENTE que un médico puede asociar a su cuenta, junto con
+ * si ya está asociado actualmente.
+ */
+data class PacienteAsociable(
+    val usuarioId: String,
+    val nombre: String,
+    val email: String,
+    val yaAsociado: Boolean
 )
 
 data class TomaProgramada(

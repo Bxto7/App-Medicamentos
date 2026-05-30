@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
@@ -126,34 +127,55 @@ fun StatCard(modifier: Modifier, icon: ImageVector, valor: String, label: String
 }
 
 @Composable
-fun PatientsScreen(viewModel: AdminViewModel, onSelectPaciente: (Paciente) -> Unit) {
+fun PatientsScreen(
+    viewModel: AdminViewModel,
+    onSelectPaciente: (Paciente) -> Unit,
+    onAsociarPacientes: () -> Unit
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = viewModel::onSearchChange,
-            placeholder = { Text("Buscar paciente...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            shape = RoundedCornerShape(12.dp)
-        )
-        if (state.pacientes.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No se encontraron pacientes", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(state.pacientes) { paciente ->
-                    PacienteCard(paciente = paciente, onClick = {
-                        viewModel.selectPaciente(paciente)
-                        onSelectPaciente(paciente)
-                    })
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = viewModel::onSearchChange,
+                placeholder = { Text("Buscar paciente...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
+            if (state.pacientes.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        "Aún no tienes pacientes asociados.\nPulsa \"Asociar pacientes\" para agregarlos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(state.pacientes) { paciente ->
+                        PacienteCard(paciente = paciente, onClick = {
+                            viewModel.selectPaciente(paciente)
+                            onSelectPaciente(paciente)
+                        })
+                    }
+                    item { Spacer(Modifier.height(80.dp)) }
                 }
             }
         }
+        ExtendedFloatingActionButton(
+            onClick = onAsociarPacientes,
+            icon = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
+            text = { Text("Asociar pacientes") },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+        )
     }
 }
 

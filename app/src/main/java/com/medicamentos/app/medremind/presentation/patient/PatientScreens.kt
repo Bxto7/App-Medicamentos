@@ -112,6 +112,61 @@ fun PatientHomeScreen(viewModel: PatientHomeViewModel) {
                 TomaCard(toma = toma, hora = fmt.format(Date(toma.fechaHoraProgramada)), onMarcar = { estado -> viewModel.marcar(toma, estado) })
             }
         }
+
+        if (state.tratamientos.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(8.dp))
+                Text("Mis medicamentos recetados", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+            }
+            items(state.tratamientos) { trat ->
+                TratamientoRecetadoCard(trat)
+            }
+        }
+    }
+}
+
+@Composable
+fun TratamientoRecetadoCard(trat: com.medicamentos.app.medremind.domain.model.Tratamiento) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Medication, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(22.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(trat.medicamentoNombre, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                    Text(trat.dosis, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "Horarios: ${trat.horarios.joinToString(", ")}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (trat.medicoNombre.isNotBlank()) {
+                Spacer(Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Recetado por ${trat.medicoNombre}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            if (trat.instrucciones.isNotBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(trat.instrucciones, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
     }
 }
 

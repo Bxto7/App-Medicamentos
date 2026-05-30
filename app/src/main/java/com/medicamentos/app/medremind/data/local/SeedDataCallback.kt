@@ -3,6 +3,7 @@ package com.medicamentos.app.medremind.data.local
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.medicamentos.app.medremind.data.local.entity.MedicamentoEntity
+import com.medicamentos.app.medremind.data.local.entity.MedicoPacienteEntity
 import com.medicamentos.app.medremind.data.local.entity.PacienteEntity
 import com.medicamentos.app.medremind.data.local.entity.RegistroTomaEntity
 import com.medicamentos.app.medremind.data.local.entity.TomaProgramadaEntity
@@ -36,19 +37,28 @@ class SeedDataCallback : RoomDatabase.Callback() {
         val tratamientoDao = database.tratamientoDao()
         val tomaDao = database.tomaProgramadaDao()
         val registroDao = database.registroTomaDao()
+        val medicoPacienteDao = database.medicoPacienteDao()
 
+        // La identidad del paciente es su Usuario: los IDs de las fichas, tomas y
+        // tratamientos coinciden con el usuario para que la vista del paciente
+        // (que consulta por su userId) muestre sus datos de punta a punta.
         val medicoId = "medico-001"
-        val paciente1Id = "paciente-001"
-        val paciente2Id = "paciente-002"
+        val medicoNombre = "Dr. Carlos García"
+        val paciente1Id = "user-pac-001"
+        val paciente2Id = "user-pac-002"
 
         // Usuarios de prueba — DiabeTrack
-        usuarioDao.insert(UsuarioEntity(medicoId, "medico@medremind.com", "Dr. Carlos García", hash("medico123"), "MEDICO", avatarId = 0))
-        usuarioDao.insert(UsuarioEntity("user-pac-001", "juan@medremind.com", "Juan Pérez", hash("paciente123"), "PACIENTE", avatarId = 0))
-        usuarioDao.insert(UsuarioEntity("user-pac-002", "maria@medremind.com", "María López", hash("maria123"), "PACIENTE", avatarId = 1))
+        usuarioDao.insert(UsuarioEntity(medicoId, "medico@medremind.com", medicoNombre, hash("medico123"), "MEDICO", avatarId = 0))
+        usuarioDao.insert(UsuarioEntity(paciente1Id, "juan@medremind.com", "Juan Pérez", hash("paciente123"), "PACIENTE", avatarId = 0))
+        usuarioDao.insert(UsuarioEntity(paciente2Id, "maria@medremind.com", "María López", hash("maria123"), "PACIENTE", avatarId = 1))
 
-        // Pacientes con diagnóstico de diabetes
+        // Ficha clínica opcional, con id = usuarioId
         pacienteDao.insert(PacienteEntity(paciente1Id, "Juan Pérez", 52, "Diabetes tipo 2", null, medicoId))
         pacienteDao.insert(PacienteEntity(paciente2Id, "María López", 38, "Diabetes tipo 1", null, medicoId))
+
+        // Asociaciones médico-paciente (N:N)
+        medicoPacienteDao.insert(MedicoPacienteEntity(medicoId, paciente1Id, now()))
+        medicoPacienteDao.insert(MedicoPacienteEntity(medicoId, paciente2Id, now()))
 
         // Medicamentos para diabetes
         val med1Id = "med-001"; val med2Id = "med-002"; val med3Id = "med-003"; val med4Id = "med-004"
@@ -58,9 +68,9 @@ class SeedDataCallback : RoomDatabase.Callback() {
         medicamentoDao.insert(MedicamentoEntity(med4Id, "Sitagliptina", "100 mg", "Oral", "Una vez al día con o sin alimentos.", null))
 
         val trat1Id = "trat-001"; val trat2Id = "trat-002"; val trat3Id = "trat-003"
-        tratamientoDao.insert(TratamientoEntity(trat1Id, paciente1Id, med1Id, "Metformina", "500 mg", 8, "08:00,14:00,20:00", now(), null, 90, "Controla el azúcar. Tomar con comidas."))
-        tratamientoDao.insert(TratamientoEntity(trat2Id, paciente1Id, med2Id, "Glibenclamida", "5 mg", 24, "07:30", now(), null, 30, "Estimula producción de insulina. No saltear comidas."))
-        tratamientoDao.insert(TratamientoEntity(trat3Id, paciente2Id, med3Id, "Insulina Glargina", "10 UI", 24, "22:00", now(), null, 60, "Insulina de acción prolongada. Aplicar antes de dormir."))
+        tratamientoDao.insert(TratamientoEntity(trat1Id, paciente1Id, med1Id, "Metformina", "500 mg", 8, "08:00,14:00,20:00", now(), null, 90, "Controla el azúcar. Tomar con comidas.", medicoId, medicoNombre))
+        tratamientoDao.insert(TratamientoEntity(trat2Id, paciente1Id, med2Id, "Glibenclamida", "5 mg", 24, "07:30", now(), null, 30, "Estimula producción de insulina. No saltear comidas.", medicoId, medicoNombre))
+        tratamientoDao.insert(TratamientoEntity(trat3Id, paciente2Id, med3Id, "Insulina Glargina", "10 UI", 24, "22:00", now(), null, 60, "Insulina de acción prolongada. Aplicar antes de dormir.", medicoId, medicoNombre))
 
         val tomasHistorial = mutableListOf<TomaProgramadaEntity>()
         for (daysAgo in 13 downTo 1) {

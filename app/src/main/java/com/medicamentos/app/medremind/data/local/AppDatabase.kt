@@ -2,13 +2,17 @@ package com.medicamentos.app.medremind.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.medicamentos.app.medremind.data.local.dao.MedicamentoDao
+import com.medicamentos.app.medremind.data.local.dao.MedicoPacienteDao
 import com.medicamentos.app.medremind.data.local.dao.PacienteDao
 import com.medicamentos.app.medremind.data.local.dao.RegistroTomaDao
 import com.medicamentos.app.medremind.data.local.dao.TomaProgramadaDao
 import com.medicamentos.app.medremind.data.local.dao.TratamientoDao
 import com.medicamentos.app.medremind.data.local.dao.UsuarioDao
 import com.medicamentos.app.medremind.data.local.entity.MedicamentoEntity
+import com.medicamentos.app.medremind.data.local.entity.MedicoPacienteEntity
 import com.medicamentos.app.medremind.data.local.entity.PacienteEntity
 import com.medicamentos.app.medremind.data.local.entity.RegistroTomaEntity
 import com.medicamentos.app.medremind.data.local.entity.TomaProgramadaEntity
@@ -23,8 +27,9 @@ import com.medicamentos.app.medremind.data.local.entity.UsuarioEntity
         TratamientoEntity::class,
         TomaProgramadaEntity::class,
         RegistroTomaEntity::class,
+        MedicoPacienteEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,4 +39,28 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun tratamientoDao(): TratamientoDao
     abstract fun tomaProgramadaDao(): TomaProgramadaDao
     abstract fun registroTomaDao(): RegistroTomaDao
+    abstract fun medicoPacienteDao(): MedicoPacienteDao
+
+    companion object {
+        /**
+         * v3 -> v4: tabla de unión médico-paciente (N:N) y médico responsable
+         * denormalizado en cada tratamiento.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS medico_paciente (
+                        medico_id TEXT NOT NULL,
+                        paciente_id TEXT NOT NULL,
+                        fecha_asociacion INTEGER NOT NULL,
+                        PRIMARY KEY(medico_id, paciente_id)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("ALTER TABLE tratamientos ADD COLUMN medico_id TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE tratamientos ADD COLUMN medico_nombre TEXT NOT NULL DEFAULT ''")
+            }
+        }
+    }
 }
