@@ -36,8 +36,15 @@ class AuthRepositoryImpl(
     }
 
     private suspend fun loginLocal(email: String, password: String): Result<Usuario> {
+        val emailNorm = email.trim().lowercase()
+        // Si el usuario existe pero fue registrado con Firebase (sin hash local),
+        // no podemos autenticarlo offline — la contraseña la maneja Firebase Auth.
+        val byEmail = usuarioDao.findByEmail(emailNorm)
+        if (byEmail != null && byEmail.passwordHash.isEmpty()) {
+            return Result.failure(Exception("Sin conexión. Necesitas internet para iniciar sesión"))
+        }
         val hash = hashPassword(password)
-        val entity = usuarioDao.findByEmailAndPassword(email.trim().lowercase(), hash)
+        val entity = usuarioDao.findByEmailAndPassword(emailNorm, hash)
             ?: return Result.failure(Exception("Correo o contraseña incorrectos"))
         val domain = entity.toDomain()
         sessionManager.saveSession(domain.id, domain.rol, domain.nombre)

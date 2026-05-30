@@ -108,7 +108,10 @@ class SeedDataCallback : RoomDatabase.Callback() {
         val dayStart = cal.timeInMillis
         horarios.forEach { hora ->
             val parts = hora.split(":")
-            val ts = dayStart + parts[0].toLong() * 3_600_000L + parts[1].toLong() * 60_000L
+            if (parts.size != 2) return@forEach
+            val h = parts[0].toLongOrNull() ?: return@forEach
+            val m = parts[1].toLongOrNull() ?: return@forEach
+            val ts = dayStart + h * 3_600_000L + m * 60_000L
             list.add(TomaProgramadaEntity(UUID.randomUUID().toString(), tratId, pacId, med, dosis, ts, "PENDIENTE"))
         }
     }
