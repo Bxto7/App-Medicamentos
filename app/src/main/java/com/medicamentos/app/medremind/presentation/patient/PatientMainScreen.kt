@@ -75,10 +75,9 @@ fun PatientMainScreen(onLogout: () -> Unit) {
                 0 -> PatientHomeScreen(viewModel = viewModel)
                 1 -> CalendarScreen(viewModel = viewModel)
                 2 -> HistoryScreen(viewModel = viewModel)
-                3 -> PatientAlertsScreen()
+                3 -> PatientAlertsScreen(state = state)
                 4 -> PatientProfileScreen(
-                    nombrePaciente = state.nombrePaciente,
-                    avatarId = state.avatarId,
+                    state = state,
                     onLogout = onLogout
                 )
             }

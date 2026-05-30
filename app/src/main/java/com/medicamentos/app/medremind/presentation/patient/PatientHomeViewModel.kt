@@ -27,6 +27,7 @@ import java.util.Calendar
 
 data class PatientHomeUiState(
     val nombrePaciente: String = "",
+    val emailPaciente: String = "",
     val tomasHoy: List<TomaProgramada> = emptyList(),
     val tomadas: Int = 0,
     val total: Int = 0,
@@ -34,7 +35,26 @@ data class PatientHomeUiState(
     val tratamientos: List<Tratamiento> = emptyList(),
     val pacienteId: String = "",
     val avatarId: Int = 0
-)
+) {
+    val adherenciaPorcentaje: Int
+        get() = if (historial.isEmpty()) 0
+                else (historial.count { it.estado == EstadoToma.TOMADO || it.estado == EstadoToma.TARDE } * 100 / historial.size)
+
+    val tratamientosActivos: Int get() = tratamientos.size
+
+    val medicoPrincipal: String
+        get() = tratamientos.firstOrNull { it.medicoNombre.isNotBlank() }?.medicoNombre ?: "Sin médico asignado"
+
+    val enfermedadBase: String
+        get() {
+            val meds = tratamientos.map { it.medicamentoNombre }.distinct()
+            return when {
+                meds.isEmpty() -> "Sin diagnóstico registrado"
+                meds.size == 1 -> "Tratamiento: ${meds.first()}"
+                else -> "Tratamiento: ${meds.take(2).joinToString(", ")}${if (meds.size > 2) " +${meds.size - 2} más" else ""}"
+            }
+        }
+}
 
 class PatientHomeViewModel(
     private val authRepository: AuthRepository,
@@ -48,22 +68,25 @@ class PatientHomeViewModel(
     private val userId = authRepository.getUserId().filterNotNull()
     private val nombreFlow = authRepository.getNombre()
     private val _avatarId = MutableStateFlow(0)
+    private val _email = MutableStateFlow("")
 
     init {
-        // Cargar avatarId del usuario actual
         userId.onEach { id ->
             val entity = usuarioDao.findById(id)
             _avatarId.value = entity?.avatarId ?: 0
+            _email.value = entity?.email ?: ""
         }.launchIn(viewModelScope)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<PatientHomeUiState> = combine(userId, nombreFlow, _avatarId) { id, nombre, avatarId ->
-        Triple(id, nombre ?: "", avatarId)
-    }.flatMapLatest { (id, nombre, avatarId) ->
+    val uiState: StateFlow<PatientHomeUiState> = combine(userId, nombreFlow, _avatarId, _email) { id, nombre, avatarId, email ->
+        listOf(id, nombre ?: "", avatarId.toString(), email)
+    }.flatMapLatest { parts ->
+        val id = parts[0]; val nombre = parts[1]; val avatarId = parts[2].toInt(); val email = parts[3]
         combine(obtenerTomasDelDia(id), obtenerHistorial(id), obtenerMisTratamientos(id)) { tomas, historial, tratamientos ->
             PatientHomeUiState(
                 nombrePaciente = nombre,
+                emailPaciente = email,
                 tomasHoy = tomas,
                 tomadas = tomas.count { it.estado == EstadoToma.TOMADO },
                 total = tomas.size,
