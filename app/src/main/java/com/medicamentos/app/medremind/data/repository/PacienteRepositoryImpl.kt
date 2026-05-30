@@ -1,11 +1,13 @@
 package com.medicamentos.app.medremind.data.repository
 
+import com.google.firebase.firestore.FirebaseFirestore
 import com.medicamentos.app.medremind.data.local.dao.MedicamentoDao
 import com.medicamentos.app.medremind.data.local.dao.MedicoPacienteDao
 import com.medicamentos.app.medremind.data.local.dao.PacienteDao
 import com.medicamentos.app.medremind.data.local.dao.TomaProgramadaDao
 import com.medicamentos.app.medremind.data.local.dao.TratamientoDao
 import com.medicamentos.app.medremind.data.local.entity.MedicoPacienteEntity
+import com.medicamentos.app.medremind.data.local.entity.MedicamentoEntity
 import com.medicamentos.app.medremind.data.local.entity.TomaProgramadaEntity
 import com.medicamentos.app.medremind.data.local.entity.TratamientoEntity
 import com.medicamentos.app.medremind.data.mappers.toDomain
@@ -18,16 +20,15 @@ import com.medicamentos.app.medremind.domain.repository.AsociacionRepository
 import com.medicamentos.app.medremind.domain.repository.MedicamentoRepository
 import com.medicamentos.app.medremind.domain.repository.PacienteRepository
 import com.medicamentos.app.medremind.domain.repository.TratamientoRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.Calendar
 import java.util.UUID
 
-/**
- * La lista de pacientes de un médico se deriva de la tabla de unión
- * [MedicoPacienteDao] (usuarios con rol PACIENTE asociados), no de la tabla
- * `pacientes`, que ahora guarda solo la ficha clínica opcional.
- */
 class PacienteRepositoryImpl(
     private val medicoPacienteDao: MedicoPacienteDao,
     private val pacienteDao: PacienteDao
@@ -46,8 +47,10 @@ class PacienteRepositoryImpl(
 }
 
 class AsociacionRepositoryImpl(
-    private val medicoPacienteDao: MedicoPacienteDao
+    private val medicoPacienteDao: MedicoPacienteDao,
+    private val firestore: FirebaseFirestore
 ) : AsociacionRepository {
+
     override fun getPacientesAsociables(medicoId: String): Flow<List<PacienteAsociable>> =
         medicoPacienteDao.getPacientesAsociables(medicoId).map { list -> list.map { it.toDomain() } }
 
@@ -55,36 +58,51 @@ class AsociacionRepositoryImpl(
         val ahora = System.currentTimeMillis()
         pacienteIds.forEach { pacienteId ->
             medicoPacienteDao.insert(MedicoPacienteEntity(medicoId, pacienteId, ahora))
+            // Sync a Firestore (async, no bloquea)
+            firestoreSync {
+                firestore.collection("asociaciones")
+                    .document("${medicoId}_${pacienteId}")
+                    .set(mapOf("medicoId" to medicoId, "pacienteId" to pacienteId, "fechaAsociacion" to ahora))
+                    .await()
+            }
         }
     }
 
-    override suspend fun desasociar(medicoId: String, pacienteId: String) =
+    override suspend fun desasociar(medicoId: String, pacienteId: String) {
         medicoPacienteDao.delete(medicoId, pacienteId)
+        firestoreSync {
+            firestore.collection("asociaciones")
+                .document("${medicoId}_${pacienteId}")
+                .delete().await()
+        }
+    }
 }
 
 class MedicamentoRepositoryImpl(
-    private val medicamentoDao: MedicamentoDao
+    private val medicamentoDao: MedicamentoDao,
+    private val firestore: FirebaseFirestore
 ) : MedicamentoRepository {
+
     override fun getAll(): Flow<List<Medicamento>> =
         medicamentoDao.getAll().map { list -> list.map { it.toDomain() } }
 
     override suspend fun add(nombre: String, dosis: String, via: String, instrucciones: String) {
-        medicamentoDao.insert(
-            com.medicamentos.app.medremind.data.local.entity.MedicamentoEntity(
-                id = UUID.randomUUID().toString(),
-                nombre = nombre.trim(),
-                dosis = dosis.trim(),
-                via = via.trim(),
-                instrucciones = instrucciones.trim(),
-                fotoUrl = null
-            )
-        )
+        val id = UUID.randomUUID().toString()
+        val entity = MedicamentoEntity(id, nombre.trim(), dosis.trim(), via.trim(), instrucciones.trim(), null)
+        medicamentoDao.insert(entity)
+        // Sync a Firestore
+        firestoreSync {
+            firestore.collection("medicamentos").document(id).set(
+                mapOf("nombre" to nombre.trim(), "dosis" to dosis.trim(), "via" to via.trim(), "instrucciones" to instrucciones.trim())
+            ).await()
+        }
     }
 }
 
 class TratamientoRepositoryImpl(
     private val tratamientoDao: TratamientoDao,
-    private val tomaProgramadaDao: TomaProgramadaDao
+    private val tomaProgramadaDao: TomaProgramadaDao,
+    private val firestore: FirebaseFirestore
 ) : TratamientoRepository {
 
     override fun getByPaciente(pacienteId: String): Flow<List<Tratamiento>> =
@@ -124,6 +142,27 @@ class TratamientoRepositoryImpl(
 
         val tomas = generarTomas(tratamientoId, pacienteId, medicamentoNombre, dosis, horarios, fechaInicio, fechaFin)
         tomaProgramadaDao.insertAll(tomas)
+
+        // Sync tratamiento a Firestore (async)
+        firestoreSync {
+            firestore.collection("tratamientos").document(tratamientoId).set(
+                mapOf(
+                    "pacienteId" to pacienteId,
+                    "medicamentoId" to medicamentoId,
+                    "medicamentoNombre" to medicamentoNombre,
+                    "dosis" to dosis,
+                    "frecuenciaHoras" to frecuenciaHoras,
+                    "horarios" to horarios,
+                    "fechaInicio" to fechaInicio,
+                    "fechaFin" to fechaFin,
+                    "stockRestante" to stockInicial,
+                    "instrucciones" to instrucciones,
+                    "medicoId" to medicoId,
+                    "medicoNombre" to medicoNombre
+                )
+            ).await()
+        }
+
         return tomas.map { it.toDomain() }
     }
 
@@ -165,5 +204,12 @@ class TratamientoRepositoryImpl(
             }
         }
         return tomas
+    }
+}
+
+// Helper: ejecuta el bloque de Firestore en background sin bloquear el caller
+private fun firestoreSync(block: suspend () -> Unit) {
+    CoroutineScope(Dispatchers.IO).launch {
+        try { block() } catch (_: Exception) { /* Sin red: se sincronizará luego */ }
     }
 }

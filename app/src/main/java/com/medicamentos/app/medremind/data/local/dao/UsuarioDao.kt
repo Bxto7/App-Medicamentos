@@ -11,6 +11,9 @@ interface UsuarioDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(usuario: UsuarioEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(usuario: UsuarioEntity)
+
     @Query("SELECT * FROM usuarios WHERE email = :email AND password_hash = :passwordHash LIMIT 1")
     suspend fun findByEmailAndPassword(email: String, passwordHash: String): UsuarioEntity?
 

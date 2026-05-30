@@ -37,6 +37,8 @@ import com.medicamentos.app.medremind.presentation.admin.AddTreatmentViewModel
 import com.medicamentos.app.medremind.presentation.admin.AdminViewModel
 import com.medicamentos.app.medremind.presentation.auth.AuthViewModel
 import com.medicamentos.app.medremind.presentation.patient.PatientHomeViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.medicamentos.app.medremind.security.DatabaseKeyManager
 import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SupportFactory
@@ -49,6 +51,8 @@ val infraModule = module {
     single { SessionManager(androidContext()) }
     single { NotificationHelper(androidContext()) }
     single { DatabaseKeyManager(androidContext()) }
+    single { FirebaseAuth.getInstance() }
+    single { FirebaseFirestore.getInstance() }
 }
 
 val databaseModule = module {
@@ -76,11 +80,11 @@ val databaseModule = module {
 }
 
 val repositoryModule = module {
-    single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get(), get(), get()) }
     single<PacienteRepository> { PacienteRepositoryImpl(get(), get()) }
-    single<AsociacionRepository> { AsociacionRepositoryImpl(get()) }
-    single<MedicamentoRepository> { MedicamentoRepositoryImpl(get()) }
-    single<TratamientoRepository> { TratamientoRepositoryImpl(get(), get()) }
+    single<AsociacionRepository> { AsociacionRepositoryImpl(get(), get()) }
+    single<MedicamentoRepository> { MedicamentoRepositoryImpl(get(), get()) }
+    single<TratamientoRepository> { TratamientoRepositoryImpl(get(), get(), get()) }
     single<TomaRepository> { TomaRepositoryImpl(get(), get(), get()) }
 }
 
