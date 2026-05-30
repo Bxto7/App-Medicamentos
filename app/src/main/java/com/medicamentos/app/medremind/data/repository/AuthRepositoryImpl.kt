@@ -59,14 +59,14 @@ class AuthRepositoryImpl(
             val authResult = firebaseAuth.createUserWithEmailAndPassword(emailNorm, password).await()
             val uid = authResult.user?.uid ?: throw Exception("Error al crear usuario")
 
-            // 2. Guardar perfil en Firestore
+            // 2. Guardar perfil en Firestore (no bloqueante — si falla sin red, Room ya guardó)
             val userData = mapOf(
                 "nombre" to nombre.trim(),
                 "email" to emailNorm,
                 "rol" to rol.name,
                 "avatarId" to avatarId
             )
-            firestore.collection("usuarios").document(uid).set(userData).await()
+            try { firestore.collection("usuarios").document(uid).set(userData).await() } catch (_: Exception) {}
 
             // 3. Cachear en Room (sin password hash — la auth la maneja Firebase)
             val entity = UsuarioEntity(uid, emailNorm, nombre.trim(), "", rol.name, avatarId)
