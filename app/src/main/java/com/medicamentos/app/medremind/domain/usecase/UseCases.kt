@@ -2,10 +2,13 @@ package com.medicamentos.app.medremind.domain.usecase
 
 import com.medicamentos.app.medremind.domain.model.EstadoToma
 import com.medicamentos.app.medremind.domain.model.Paciente
+import com.medicamentos.app.medremind.domain.model.PacienteAsociable
 import com.medicamentos.app.medremind.domain.model.RegistroToma
 import com.medicamentos.app.medremind.domain.model.Rol
 import com.medicamentos.app.medremind.domain.model.TomaProgramada
+import com.medicamentos.app.medremind.domain.model.Tratamiento
 import com.medicamentos.app.medremind.domain.model.Usuario
+import com.medicamentos.app.medremind.domain.repository.AsociacionRepository
 import com.medicamentos.app.medremind.domain.repository.AuthRepository
 import com.medicamentos.app.medremind.domain.repository.PacienteRepository
 import com.medicamentos.app.medremind.domain.repository.TomaRepository
@@ -49,6 +52,26 @@ class ObtenerPacientesUseCase(private val repo: PacienteRepository) {
     fun buscar(medicoId: String, query: String): Flow<List<Paciente>> = repo.searchPacientes(medicoId, query)
 }
 
+class ObtenerPacientesAsociablesUseCase(private val repo: AsociacionRepository) {
+    operator fun invoke(medicoId: String): Flow<List<PacienteAsociable>> = repo.getPacientesAsociables(medicoId)
+}
+
+class AsociarPacientesUseCase(private val repo: AsociacionRepository) {
+    suspend operator fun invoke(medicoId: String, pacienteIds: List<String>): Result<Unit> = runCatching {
+        if (medicoId.isBlank()) error("Médico no identificado")
+        if (pacienteIds.isEmpty()) error("Selecciona al menos un paciente")
+        repo.asociar(medicoId, pacienteIds)
+    }
+
+    suspend fun desasociar(medicoId: String, pacienteId: String): Result<Unit> = runCatching {
+        repo.desasociar(medicoId, pacienteId)
+    }
+}
+
+class ObtenerMisTratamientosUseCase(private val repo: TratamientoRepository) {
+    operator fun invoke(pacienteId: String): Flow<List<Tratamiento>> = repo.getByPaciente(pacienteId)
+}
+
 class ObtenerTomasDelDiaUseCase(private val repo: TomaRepository) {
     operator fun invoke(pacienteId: String): Flow<List<TomaProgramada>> {
         val cal = Calendar.getInstance()
@@ -80,11 +103,13 @@ class AgregarTratamientoUseCase(private val repo: TratamientoRepository) {
         fechaInicio: Long,
         fechaFin: Long?,
         stockInicial: Int,
-        instrucciones: String
+        instrucciones: String,
+        medicoId: String,
+        medicoNombre: String
     ): Result<List<TomaProgramada>> = runCatching {
         if (medicamentoId.isBlank()) error("Selecciona un medicamento")
         if (horarios.isEmpty()) error("Agrega al menos un horario")
         if (stockInicial < 0) error("El stock no puede ser negativo")
-        repo.add(pacienteId, medicamentoId, medicamentoNombre, dosis, frecuenciaHoras, horarios, fechaInicio, fechaFin, stockInicial, instrucciones)
+        repo.add(pacienteId, medicamentoId, medicamentoNombre, dosis, frecuenciaHoras, horarios, fechaInicio, fechaFin, stockInicial, instrucciones, medicoId, medicoNombre)
     }
 }

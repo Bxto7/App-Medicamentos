@@ -46,7 +46,21 @@ data class TratamientoEntity(
     @ColumnInfo(name = "fecha_inicio") val fechaInicio: Long,
     @ColumnInfo(name = "fecha_fin") val fechaFin: Long?,
     @ColumnInfo(name = "stock_restante") val stockRestante: Int,
-    val instrucciones: String
+    val instrucciones: String,
+    @ColumnInfo(name = "medico_id", defaultValue = "") val medicoId: String = "",
+    @ColumnInfo(name = "medico_nombre", defaultValue = "") val medicoNombre: String = ""
+)
+
+/**
+ * Tabla de unión N:N entre médicos y pacientes. Ambos IDs referencian
+ * usuarios.id: medicoId apunta a un Usuario con rol MEDICO y pacienteId a uno
+ * con rol PACIENTE. La clave primaria compuesta impide asociaciones duplicadas.
+ */
+@Entity(tableName = "medico_paciente", primaryKeys = ["medico_id", "paciente_id"])
+data class MedicoPacienteEntity(
+    @ColumnInfo(name = "medico_id") val medicoId: String,
+    @ColumnInfo(name = "paciente_id") val pacienteId: String,
+    @ColumnInfo(name = "fecha_asociacion") val fechaAsociacion: Long
 )
 
 @Entity(tableName = "tomas_programadas")

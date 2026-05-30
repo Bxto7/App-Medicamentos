@@ -109,6 +109,8 @@ class AddTreatmentViewModel(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
+            val medicoId = authRepository.getUserId().filterNotNull().first()
+            val medicoNombre = authRepository.getNombre().first() ?: ""
             val result = agregarTratamiento(
                 pacienteId = state.selectedPacienteId,
                 medicamentoId = med.id,
@@ -119,7 +121,9 @@ class AddTreatmentViewModel(
                 fechaInicio = startOfDay(state.fechaInicio),
                 fechaFin = state.fechaFin,
                 stockInicial = stock,
-                instrucciones = state.instrucciones.ifBlank { med.instrucciones }
+                instrucciones = state.instrucciones.ifBlank { med.instrucciones },
+                medicoId = medicoId,
+                medicoNombre = medicoNombre
             )
             result.fold(
                 onSuccess = { tomas ->

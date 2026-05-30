@@ -42,6 +42,16 @@ fun AdminMainScreen(onLogout: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showAddTreatment by remember { mutableStateOf(false) }
     var showPatientDetail by remember { mutableStateOf(false) }
+    var showAssociatePatients by remember { mutableStateOf(false) }
+
+    // Pantalla de asociar pacientes (overlay completo)
+    if (showAssociatePatients) {
+        AssociatePatientsScreen(
+            viewModel = viewModel,
+            onBack = { showAssociatePatients = false }
+        )
+        return
+    }
 
     // Pantalla de agregar tratamiento (overlay completo)
     if (showAddTreatment) {
@@ -90,7 +100,8 @@ fun AdminMainScreen(onLogout: () -> Unit) {
                     onSelectPaciente = {
                         showPatientDetail = true
                         selectedTab = 1
-                    }
+                    },
+                    onAsociarPacientes = { showAssociatePatients = true }
                 )
                 2 -> MedicationCatalogScreen(viewModel = viewModel)
                 3 -> ReportsScreen(viewModel = viewModel)

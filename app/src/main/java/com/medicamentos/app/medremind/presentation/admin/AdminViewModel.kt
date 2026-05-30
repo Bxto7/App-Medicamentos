@@ -4,12 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.medicamentos.app.medremind.domain.model.Medicamento
 import com.medicamentos.app.medremind.domain.model.Paciente
+import com.medicamentos.app.medremind.domain.model.PacienteAsociable
 import com.medicamentos.app.medremind.domain.model.RegistroToma
 import com.medicamentos.app.medremind.domain.model.Tratamiento
 import com.medicamentos.app.medremind.domain.repository.AuthRepository
 import com.medicamentos.app.medremind.domain.repository.MedicamentoRepository
 import com.medicamentos.app.medremind.domain.repository.TomaRepository
 import com.medicamentos.app.medremind.domain.repository.TratamientoRepository
+import com.medicamentos.app.medremind.domain.usecase.AsociarPacientesUseCase
+import com.medicamentos.app.medremind.domain.usecase.ObtenerPacientesAsociablesUseCase
 import com.medicamentos.app.medremind.domain.usecase.ObtenerPacientesUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,12 +35,15 @@ data class AdminUiState(
     val medicamentos: List<Medicamento> = emptyList(),
     val selectedPaciente: Paciente? = null,
     val tratamientosDelPaciente: List<Tratamiento> = emptyList(),
-    val historialDelPaciente: List<RegistroToma> = emptyList()
+    val historialDelPaciente: List<RegistroToma> = emptyList(),
+    val pacientesAsociables: List<PacienteAsociable> = emptyList()
 )
 
 class AdminViewModel(
     private val authRepository: AuthRepository,
     private val obtenerPacientes: ObtenerPacientesUseCase,
+    private val obtenerAsociables: ObtenerPacientesAsociablesUseCase,
+    private val asociarPacientesUseCase: AsociarPacientesUseCase,
     private val medicamentoRepository: MedicamentoRepository,
     private val tratamientoRepository: TratamientoRepository,
     private val tomaRepository: TomaRepository
@@ -70,19 +76,40 @@ class AdminViewModel(
             } else flowOf(emptyList())
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val asociablesFlow = medicoId.flatMapLatest { id -> obtenerAsociables(id) }
+
     private val baseState = combine(medicoId, medicoNombre, pacientesFlow, medicamentoRepository.getAll()) {
         medicoId, nombre, pacientes, medicamentos ->
         AdminUiState(medicoId = medicoId, medicoNombre = nombre ?: "", pacientes = pacientes, medicamentos = medicamentos)
     }
 
-    val uiState: StateFlow<AdminUiState> = combine(baseState, _selectedPaciente, tratamientosFlow, historialFlow) {
-        base, selected, tratamientos, historial ->
-        base.copy(selectedPaciente = selected, tratamientosDelPaciente = tratamientos, historialDelPaciente = historial)
+    val uiState: StateFlow<AdminUiState> = combine(baseState, _selectedPaciente, tratamientosFlow, historialFlow, asociablesFlow) {
+        base, selected, tratamientos, historial, asociables ->
+        base.copy(
+            selectedPaciente = selected,
+            tratamientosDelPaciente = tratamientos,
+            historialDelPaciente = historial,
+            pacientesAsociables = asociables
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AdminUiState())
 
     fun onSearchChange(query: String) = _searchQuery.update { query }
     fun selectPaciente(paciente: Paciente) = _selectedPaciente.update { paciente }
     fun clearSelectedPaciente() = _selectedPaciente.update { null }
+
+    fun asociarPacientes(pacienteIds: List<String>, onResult: (Boolean) -> Unit) {
+        val medicoActual = uiState.value.medicoId
+        viewModelScope.launch {
+            asociarPacientesUseCase(medicoActual, pacienteIds)
+                .fold(onSuccess = { onResult(true) }, onFailure = { onResult(false) })
+        }
+    }
+
+    fun desasociarPaciente(pacienteId: String) {
+        val medicoActual = uiState.value.medicoId
+        viewModelScope.launch { asociarPacientesUseCase.desasociar(medicoActual, pacienteId) }
+    }
 
     fun addMedicamento(nombre: String, dosis: String, via: String, instrucciones: String, onResult: (Boolean) -> Unit) {
         if (nombre.isBlank() || dosis.isBlank() || via.isBlank()) { onResult(false); return }

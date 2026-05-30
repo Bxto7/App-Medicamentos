@@ -6,9 +6,11 @@ import com.medicamentos.app.medremind.data.local.dao.UsuarioDao
 import com.medicamentos.app.medremind.domain.model.EstadoToma
 import com.medicamentos.app.medremind.domain.model.RegistroToma
 import com.medicamentos.app.medremind.domain.model.TomaProgramada
+import com.medicamentos.app.medremind.domain.model.Tratamiento
 import com.medicamentos.app.medremind.domain.repository.AuthRepository
 import com.medicamentos.app.medremind.domain.usecase.MarcarTomaUseCase
 import com.medicamentos.app.medremind.domain.usecase.ObtenerHistorialUseCase
+import com.medicamentos.app.medremind.domain.usecase.ObtenerMisTratamientosUseCase
 import com.medicamentos.app.medremind.domain.usecase.ObtenerTomasDelDiaUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +31,7 @@ data class PatientHomeUiState(
     val tomadas: Int = 0,
     val total: Int = 0,
     val historial: List<RegistroToma> = emptyList(),
+    val tratamientos: List<Tratamiento> = emptyList(),
     val pacienteId: String = "",
     val avatarId: Int = 0
 )
@@ -37,6 +40,7 @@ class PatientHomeViewModel(
     private val authRepository: AuthRepository,
     private val obtenerTomasDelDia: ObtenerTomasDelDiaUseCase,
     private val obtenerHistorial: ObtenerHistorialUseCase,
+    private val obtenerMisTratamientos: ObtenerMisTratamientosUseCase,
     private val marcarToma: MarcarTomaUseCase,
     private val usuarioDao: UsuarioDao
 ) : ViewModel() {
@@ -57,13 +61,14 @@ class PatientHomeViewModel(
     val uiState: StateFlow<PatientHomeUiState> = combine(userId, nombreFlow, _avatarId) { id, nombre, avatarId ->
         Triple(id, nombre ?: "", avatarId)
     }.flatMapLatest { (id, nombre, avatarId) ->
-        combine(obtenerTomasDelDia(id), obtenerHistorial(id)) { tomas, historial ->
+        combine(obtenerTomasDelDia(id), obtenerHistorial(id), obtenerMisTratamientos(id)) { tomas, historial, tratamientos ->
             PatientHomeUiState(
                 nombrePaciente = nombre,
                 tomasHoy = tomas,
                 tomadas = tomas.count { it.estado == EstadoToma.TOMADO },
                 total = tomas.size,
                 historial = historial,
+                tratamientos = tratamientos,
                 pacienteId = id,
                 avatarId = avatarId
             )
