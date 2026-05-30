@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -28,7 +25,6 @@ import com.medicamentos.app.medremind.presentation.auth.RegistroScreen
 import com.medicamentos.app.medremind.presentation.navigation.Screen
 import com.medicamentos.app.medremind.presentation.patient.PatientMainScreen
 import com.medicamentos.app.medremind.presentation.theme.MedRemindTheme
-import com.medicamentos.app.medremind.security.PremiumManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,7 +36,6 @@ class MainActivity : AppCompatActivity() {
     private val authViewModel: AuthViewModel by viewModel()
     private val notificationHelper: NotificationHelper by inject()
     private val notificationScheduler: NotificationScheduler by inject()
-    private val premiumManager: PremiumManager by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +49,6 @@ class MainActivity : AppCompatActivity() {
         setContent {
             MedRemindTheme {
                 val session by authViewModel.sessionState.collectAsStateWithLifecycle()
-                var isPremium by remember { mutableStateOf(premiumManager.isPremium()) }
 
                 if (!session.isReady) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -108,12 +102,6 @@ class MainActivity : AppCompatActivity() {
                                 navController.navigate(Screen.Login.route) {
                                     popUpTo(Screen.PatientMain.route) { inclusive = true }
                                 }
-                            },
-                            isPremium = isPremium,
-                            onActivarPremium = { codigo ->
-                                val ok = premiumManager.activatePremium(codigo)
-                                if (ok) isPremium = true
-                                ok
                             }
                         )
                     }

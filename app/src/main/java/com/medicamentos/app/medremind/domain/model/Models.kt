@@ -69,20 +69,3 @@ data class ResumenAdherencia(
     val porcentaje: Float = if (totalProgramadas > 0) totalTomadas.toFloat() / totalProgramadas * 100 else 0f
 )
 
-data class ContactoEmergencia(
-    val id: String,
-    val usuarioId: String,
-    val nombre: String,
-    val telefono: String,
-    val correo: String,
-    val orden: Int
-)
-
-data class GlucosaMedicion(
-    val id: String,
-    val pacienteId: String,
-    val valor: Int,
-    val momento: String,
-    val timestamp: Long,
-    val notas: String?
-)

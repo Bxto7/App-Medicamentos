@@ -69,23 +69,3 @@ data class RegistroTomaEntity(
     @ColumnInfo(name = "fecha_hora_real") val fechaHoraReal: Long,
     val estado: String
 )
-
-@Entity(tableName = "contactos_emergencia")
-data class ContactoEmergenciaEntity(
-    @PrimaryKey val id: String,
-    @ColumnInfo(name = "usuario_id") val usuarioId: String,
-    val nombre: String,
-    val telefono: String,
-    val correo: String,
-    val orden: Int  // 1 o 2
-)
-
-@Entity(tableName = "registros_glucosa")
-data class GlucosaEntity(
-    @PrimaryKey val id: String,
-    @ColumnInfo(name = "paciente_id") val pacienteId: String,
-    val valor: Int,             // mg/dL
-    val momento: String,        // "ayunas","post-desayuno","post-almuerzo","post-cena"
-    val timestamp: Long,
-    val notas: String?
-)

@@ -26,11 +26,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -61,8 +59,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-
-private val PremiumGold = Color(0xFFFFB300)
 
 @Composable
 fun PatientHomeScreen(viewModel: PatientHomeViewModel) {
@@ -306,9 +302,7 @@ fun PatientAlertsScreen() {
 fun PatientProfileScreen(
     nombrePaciente: String,
     avatarId: Int,
-    isPremium: Boolean,
-    onLogout: () -> Unit,
-    onPremiumClick: () -> Unit
+    onLogout: () -> Unit
 ) {
     val (avatarIcon, avatarLabel) = AVATARES.getOrNull(avatarId) ?: (Icons.Default.Person to "Avatar")
 
@@ -318,7 +312,6 @@ fun PatientProfileScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            // Avatar y nombre
             Card(Modifier.fillMaxWidth()) {
                 Column(
                     Modifier.padding(20.dp),
@@ -332,50 +325,7 @@ fun PatientProfileScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(nombrePaciente, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("Paciente — Control de Diabetes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        }
-
-        // Sección Premium
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isPremium) PremiumGold.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                )
-            ) {
-                Row(
-                    Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Star,
-                        contentDescription = null,
-                        tint = PremiumGold,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            if (isPremium) "⭐ DiabeTrack Premium" else "DiabeTrack Premium",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            if (isPremium) "Todas las funciones desbloqueadas" else "Desbloquea glucosa, reportes y más",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Button(
-                        onClick = onPremiumClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isPremium) PremiumGold else MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(if (isPremium) "Ver" else "Activar", color = if (isPremium) Color.Black else Color.White)
-                    }
+                    Text("Paciente — Recordatorio de medicamentos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

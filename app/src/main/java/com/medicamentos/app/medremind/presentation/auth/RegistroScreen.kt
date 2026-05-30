@@ -17,10 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -36,13 +34,9 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Man
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Woman
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -69,7 +63,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.medicamentos.app.medremind.domain.model.Rol
 
-// Avatares disponibles: (índice, icono, label)
 val AVATARES: List<Pair<ImageVector, String>> = listOf(
     Icons.Default.Man to "Hombre",
     Icons.Default.Woman to "Mujer",
@@ -120,17 +113,10 @@ fun RegistroScreen(
                 .imePadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header con logo
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -141,12 +127,11 @@ fun RegistroScreen(
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("DiabeTrack", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Control de Diabetes", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("MedRemind", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Recordatorio de medicamentos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            // — Datos personales —
             SectionTitle("1. Datos personales")
             OutlinedTextField(
                 value = state.nombre,
@@ -186,18 +171,14 @@ fun RegistroScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // — Selector de Avatar —
             SectionTitle("2. Elige tu avatar")
-            Card(
+            androidx.compose.material3.Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             ) {
                 Column(Modifier.padding(12.dp)) {
                     for (row in 0..1) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                             for (col in 0..3) {
                                 val idx = row * 4 + col
                                 val (icon, label) = AVATARES[idx]
@@ -214,7 +195,6 @@ fun RegistroScreen(
                 }
             }
 
-            // — Rol —
             SectionTitle("3. Tipo de usuario")
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FilterChip(
@@ -229,34 +209,6 @@ fun RegistroScreen(
                 )
             }
 
-            // — Contactos de Emergencia —
-            SectionTitle("4. Contactos de emergencia")
-            Text(
-                "Si no registras una toma, se alertará a estos contactos por WhatsApp y correo.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            ContactoForm(
-                titulo = "Contacto principal",
-                nombre = state.contacto1Nombre,
-                telefono = state.contacto1Telefono,
-                correo = state.contacto1Correo,
-                onNombreChange = viewModel::onContacto1NombreChange,
-                onTelefonoChange = viewModel::onContacto1TelefonoChange,
-                onCorreoChange = viewModel::onContacto1CorreoChange
-            )
-            Divider()
-            ContactoForm(
-                titulo = "Contacto secundario (opcional)",
-                nombre = state.contacto2Nombre,
-                telefono = state.contacto2Telefono,
-                correo = state.contacto2Correo,
-                onNombreChange = viewModel::onContacto2NombreChange,
-                onTelefonoChange = viewModel::onContacto2TelefonoChange,
-                onCorreoChange = viewModel::onContacto2CorreoChange
-            )
-
-            // Error
             if (state.error != null) {
                 Text(
                     text = state.error!!,
@@ -267,13 +219,10 @@ fun RegistroScreen(
                 )
             }
 
-            // Botón registrar
             Button(
                 onClick = viewModel::register,
                 enabled = !state.isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
+                modifier = Modifier.fillMaxWidth().height(52.dp)
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
@@ -315,70 +264,19 @@ private fun AvatarItem(
     )
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(4.dp)
+        modifier = Modifier.clickable(onClick = onClick).padding(4.dp)
     ) {
         Box(
             modifier = Modifier
                 .size(52.dp)
                 .clip(CircleShape)
                 .background(bgColor)
-                .then(
-                    if (!selected) Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape)
-                    else Modifier
-                ),
+                .then(if (!selected) Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape) else Modifier),
             contentAlignment = Alignment.Center
         ) {
             Icon(icon, contentDescription = label, tint = iconColor, modifier = Modifier.size(28.dp))
         }
         Spacer(Modifier.height(2.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-private fun ContactoForm(
-    titulo: String,
-    nombre: String,
-    telefono: String,
-    correo: String,
-    onNombreChange: (String) -> Unit,
-    onTelefonoChange: (String) -> Unit,
-    onCorreoChange: (String) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(titulo, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = onNombreChange,
-            label = { Text("Nombre del contacto") },
-            leadingIcon = { Icon(Icons.Default.Person, null) },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value = telefono,
-                onValueChange = onTelefonoChange,
-                label = { Text("WhatsApp") },
-                leadingIcon = { Icon(Icons.Default.Phone, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f)
-            )
-            OutlinedTextField(
-                value = correo,
-                onValueChange = onCorreoChange,
-                label = { Text("Correo") },
-                leadingIcon = { Icon(Icons.Default.Email, null) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.weight(1f)
-            )
-        }
     }
 }

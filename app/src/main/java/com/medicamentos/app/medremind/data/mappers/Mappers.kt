@@ -1,16 +1,12 @@
 package com.medicamentos.app.medremind.data.mappers
 
-import com.medicamentos.app.medremind.data.local.entity.ContactoEmergenciaEntity
-import com.medicamentos.app.medremind.data.local.entity.GlucosaEntity
 import com.medicamentos.app.medremind.data.local.entity.MedicamentoEntity
 import com.medicamentos.app.medremind.data.local.entity.PacienteEntity
 import com.medicamentos.app.medremind.data.local.entity.RegistroTomaEntity
 import com.medicamentos.app.medremind.data.local.entity.TomaProgramadaEntity
 import com.medicamentos.app.medremind.data.local.entity.TratamientoEntity
 import com.medicamentos.app.medremind.data.local.entity.UsuarioEntity
-import com.medicamentos.app.medremind.domain.model.ContactoEmergencia
 import com.medicamentos.app.medremind.domain.model.EstadoToma
-import com.medicamentos.app.medremind.domain.model.GlucosaMedicion
 import com.medicamentos.app.medremind.domain.model.Medicamento
 import com.medicamentos.app.medremind.domain.model.Paciente
 import com.medicamentos.app.medremind.domain.model.RegistroToma
@@ -52,24 +48,4 @@ fun RegistroTomaEntity.toDomain() = RegistroToma(
     id = id, tomaProgramadaId = tomaProgramadaId, pacienteId = pacienteId,
     medicamentoNombre = medicamentoNombre, fechaHoraReal = fechaHoraReal,
     estado = EstadoToma.valueOf(estado)
-)
-
-fun ContactoEmergenciaEntity.toDomain() = ContactoEmergencia(
-    id = id, usuarioId = usuarioId, nombre = nombre,
-    telefono = telefono, correo = correo, orden = orden
-)
-
-fun ContactoEmergencia.toEntity() = ContactoEmergenciaEntity(
-    id = id, usuarioId = usuarioId, nombre = nombre,
-    telefono = telefono, correo = correo, orden = orden
-)
-
-fun GlucosaEntity.toDomain() = GlucosaMedicion(
-    id = id, pacienteId = pacienteId, valor = valor,
-    momento = momento, timestamp = timestamp, notas = notas
-)
-
-fun GlucosaMedicion.toEntity() = GlucosaEntity(
-    id = id, pacienteId = pacienteId, valor = valor,
-    momento = momento, timestamp = timestamp, notas = notas
 )

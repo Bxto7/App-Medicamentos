@@ -1,8 +1,6 @@
 package com.medicamentos.app.medremind.domain.repository
 
-import com.medicamentos.app.medremind.domain.model.ContactoEmergencia
 import com.medicamentos.app.medremind.domain.model.EstadoToma
-import com.medicamentos.app.medremind.domain.model.GlucosaMedicion
 import com.medicamentos.app.medremind.domain.model.Medicamento
 import com.medicamentos.app.medremind.domain.model.Paciente
 import com.medicamentos.app.medremind.domain.model.RegistroToma
@@ -19,8 +17,7 @@ interface AuthRepository {
         email: String,
         password: String,
         rol: Rol,
-        avatarId: Int,
-        contactosEmergencia: List<ContactoEmergencia>
+        avatarId: Int
     ): Result<Usuario>
     suspend fun logout()
     fun getUserId(): Flow<String?>
@@ -64,18 +61,4 @@ interface TomaRepository {
     suspend fun getTotalHoy(pacienteId: String, inicio: Long, fin: Long): Int
     suspend fun getTomadas(pacienteId: String, inicio: Long, fin: Long): Int
     suspend fun getPendientesAntesDeTimestamp(pacienteId: String, timestamp: Long): List<TomaProgramada>
-}
-
-interface ContactoEmergenciaRepository {
-    fun getByUsuario(usuarioId: String): Flow<List<ContactoEmergencia>>
-    suspend fun getByUsuarioSync(usuarioId: String): List<ContactoEmergencia>
-    suspend fun saveContactos(usuarioId: String, contactos: List<ContactoEmergencia>)
-}
-
-interface GlucosaRepository {
-    fun getByPaciente(pacienteId: String): Flow<List<GlucosaMedicion>>
-    fun getDesde(pacienteId: String, desde: Long): Flow<List<GlucosaMedicion>>
-    suspend fun registrar(medicion: GlucosaMedicion)
-    suspend fun eliminar(id: String)
-    suspend fun getUltima(pacienteId: String): GlucosaMedicion?
 }
