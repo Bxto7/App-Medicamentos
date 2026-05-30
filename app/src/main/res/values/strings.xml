@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DiabeTrack</string>
+    <string name="login_title">Ingresar</string>
+    <string name="email_hint">Correo electrónico</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="tab_home">Inicio</string>
+    <string name="tab_calendar">Calendario</string>
+    <string name="tab_history">Historial</string>
+    <string name="tab_alerts">Alertas</string>
+    <string name="tab_profile">Perfil</string>
+    <string name="tab_glucose">Glucosa</string>
+    <string name="tab_premium">Premium</string>
+    <string name="mark_taken">Tomado</string>
+    <string name="mark_skipped">Omitir</string>
+    <string name="premium_code_hint">Código Premium (ej: DIABETRACK2026)</string>
+    <string name="emergency_whatsapp_message">⚠️ ALERTA DIABETRACK: El paciente no ha registrado su medicamento para diabetes.</string>
+    <string name="app_description">Control de Diabetes</string>
+    <string name="channel_emergency">Alertas de emergencia</string>
+    <string name="channel_medication">Recordatorio de medicamentos</string>
+</resources>

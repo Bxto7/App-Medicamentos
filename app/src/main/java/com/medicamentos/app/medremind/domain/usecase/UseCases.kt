@@ -1,0 +1,132 @@
+package com.medicamentos.app.medremind.domain.usecase
+
+import com.medicamentos.app.medremind.domain.model.ContactoEmergencia
+import com.medicamentos.app.medremind.domain.model.EstadoToma
+import com.medicamentos.app.medremind.domain.model.GlucosaMedicion
+import com.medicamentos.app.medremind.domain.model.Paciente
+import com.medicamentos.app.medremind.domain.model.RegistroToma
+import com.medicamentos.app.medremind.domain.model.Rol
+import com.medicamentos.app.medremind.domain.model.TomaProgramada
+import com.medicamentos.app.medremind.domain.model.Usuario
+import com.medicamentos.app.medremind.domain.repository.AuthRepository
+import com.medicamentos.app.medremind.domain.repository.GlucosaRepository
+import com.medicamentos.app.medremind.domain.repository.PacienteRepository
+import com.medicamentos.app.medremind.domain.repository.TomaRepository
+import com.medicamentos.app.medremind.domain.repository.TratamientoRepository
+import kotlinx.coroutines.flow.Flow
+import java.util.Calendar
+import java.util.UUID
+import javax.inject.Inject
+
+class LoginUseCase @Inject constructor(private val repo: AuthRepository) {
+    suspend operator fun invoke(email: String, password: String): Result<Usuario> {
+        if (email.isBlank()) return Result.failure(Exception("Ingresa tu correo"))
+        if (password.isBlank()) return Result.failure(Exception("Ingresa tu contraseña"))
+        return repo.login(email, password)
+    }
+}
+
+class LogoutUseCase @Inject constructor(private val repo: AuthRepository) {
+    suspend operator fun invoke() = repo.logout()
+}
+
+class RegisterUseCase @Inject constructor(private val repo: AuthRepository) {
+    suspend operator fun invoke(
+        nombre: String,
+        email: String,
+        password: String,
+        confirmPassword: String,
+        rol: Rol,
+        avatarId: Int,
+        contactosEmergencia: List<ContactoEmergencia>
+    ): Result<Usuario> {
+        if (nombre.isBlank()) return Result.failure(Exception("Ingresa tu nombre completo"))
+        if (email.isBlank()) return Result.failure(Exception("Ingresa tu correo"))
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches())
+            return Result.failure(Exception("Correo no válido"))
+        if (password.length < 6) return Result.failure(Exception("La contraseña debe tener al menos 6 caracteres"))
+        if (password != confirmPassword) return Result.failure(Exception("Las contraseñas no coinciden"))
+        if (contactosEmergencia.isEmpty())
+            return Result.failure(Exception("Agrega al menos un contacto de emergencia"))
+
+        // Completar IDs de contactos
+        val contactosConId = contactosEmergencia.mapIndexed { i, c ->
+            c.copy(id = UUID.randomUUID().toString(), orden = i + 1, usuarioId = "")
+        }
+        return repo.register(nombre, email, password, rol, avatarId, contactosConId)
+    }
+}
+
+class ObtenerPacientesUseCase @Inject constructor(private val repo: PacienteRepository) {
+    operator fun invoke(medicoId: String): Flow<List<Paciente>> = repo.getPacientesByMedico(medicoId)
+    fun buscar(medicoId: String, query: String): Flow<List<Paciente>> = repo.searchPacientes(medicoId, query)
+}
+
+class ObtenerTomasDelDiaUseCase @Inject constructor(private val repo: TomaRepository) {
+    operator fun invoke(pacienteId: String): Flow<List<TomaProgramada>> {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        val inicio = cal.timeInMillis
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
+        val fin = cal.timeInMillis
+        return repo.getTomasDelDia(pacienteId, inicio, fin)
+    }
+}
+
+class MarcarTomaUseCase @Inject constructor(private val repo: TomaRepository) {
+    suspend operator fun invoke(toma: TomaProgramada, estado: EstadoToma) =
+        repo.marcarToma(toma.id, toma.tratamientoId, toma.pacienteId, toma.medicamentoNombre, estado)
+}
+
+class ObtenerHistorialUseCase @Inject constructor(private val repo: TomaRepository) {
+    operator fun invoke(pacienteId: String): Flow<List<RegistroToma>> = repo.getHistorial(pacienteId)
+}
+
+class AgregarTratamientoUseCase @Inject constructor(private val repo: TratamientoRepository) {
+    suspend operator fun invoke(
+        pacienteId: String,
+        medicamentoId: String,
+        medicamentoNombre: String,
+        dosis: String,
+        frecuenciaHoras: Int,
+        horarios: List<String>,
+        fechaInicio: Long,
+        fechaFin: Long?,
+        stockInicial: Int,
+        instrucciones: String
+    ): Result<List<TomaProgramada>> = runCatching {
+        if (medicamentoId.isBlank()) error("Selecciona un medicamento")
+        if (horarios.isEmpty()) error("Agrega al menos un horario")
+        if (stockInicial < 0) error("El stock no puede ser negativo")
+        repo.add(pacienteId, medicamentoId, medicamentoNombre, dosis, frecuenciaHoras, horarios, fechaInicio, fechaFin, stockInicial, instrucciones)
+    }
+}
+
+class RegistrarGlucosaUseCase @Inject constructor(private val repo: GlucosaRepository) {
+    suspend operator fun invoke(
+        pacienteId: String,
+        valor: Int,
+        momento: String,
+        notas: String?
+    ): Result<Unit> = runCatching {
+        if (valor < 20 || valor > 600) error("Valor de glucosa fuera de rango (20-600 mg/dL)")
+        repo.registrar(
+            GlucosaMedicion(
+                id = UUID.randomUUID().toString(),
+                pacienteId = pacienteId,
+                valor = valor,
+                momento = momento,
+                timestamp = System.currentTimeMillis(),
+                notas = notas?.takeIf { it.isNotBlank() }
+            )
+        )
+    }
+}
+
+class ObtenerGlucosaUseCase @Inject constructor(private val repo: GlucosaRepository) {
+    fun invoke14Dias(pacienteId: String): Flow<List<GlucosaMedicion>> {
+        val desde = System.currentTimeMillis() - (14L * 24 * 60 * 60 * 1000)
+        return repo.getDesde(pacienteId, desde)
+    }
+    fun invokeAll(pacienteId: String): Flow<List<GlucosaMedicion>> = repo.getByPaciente(pacienteId)
+}
