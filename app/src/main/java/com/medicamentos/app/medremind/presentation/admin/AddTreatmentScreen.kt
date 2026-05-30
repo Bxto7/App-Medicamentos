@@ -1,7 +1,6 @@
 package com.medicamentos.app.medremind.presentation.admin
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,13 +39,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,7 +56,7 @@ fun AddTreatmentScreen(
     pacienteNombre: String,
     onSaved: () -> Unit,
     onBack: () -> Unit,
-    viewModel: AddTreatmentViewModel = hiltViewModel()
+    viewModel: AddTreatmentViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val dateFmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
@@ -70,8 +68,12 @@ fun AddTreatmentScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Agregar tratamiento") },
-                subtitle = { Text(pacienteNombre, style = MaterialTheme.typography.bodySmall) },
+                title = {
+                    Column {
+                        Text("Agregar tratamiento")
+                        Text(pacienteNombre, style = MaterialTheme.typography.bodySmall)
+                    }
+                },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Volver") } }
             )
         }
@@ -86,7 +88,6 @@ fun AddTreatmentScreen(
         ) {
             Spacer(Modifier.height(4.dp))
 
-            // Medication selector
             var medExpanded by remember { mutableStateOf(false) }
             val selectedMedName = state.medicamentos.getOrNull(state.selectedMedIndex)?.nombre ?: "Seleccionar medicamento"
             Text("Medicamento *", style = MaterialTheme.typography.labelLarge)
@@ -108,7 +109,6 @@ fun AddTreatmentScreen(
                 }
             }
 
-            // Dosis
             OutlinedTextField(
                 value = state.dosis,
                 onValueChange = viewModel::onDosisChange,
@@ -117,7 +117,6 @@ fun AddTreatmentScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Frecuencia
             Text("Frecuencia", style = MaterialTheme.typography.labelLarge)
             val frecOptions = listOf(6 to "Cada 6h", 8 to "Cada 8h", 12 to "Cada 12h", 24 to "Cada 24h")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -130,7 +129,6 @@ fun AddTreatmentScreen(
                 }
             }
 
-            // Horarios
             Text("Horarios (HH:mm)", style = MaterialTheme.typography.labelLarge)
             state.horarios.forEachIndexed { idx, hora ->
                 OutlinedTextField(
@@ -143,7 +141,6 @@ fun AddTreatmentScreen(
                 )
             }
 
-            // Fecha inicio
             var showDateInicio by remember { mutableStateOf(false) }
             val dateInicioState = rememberDatePickerState(initialSelectedDateMillis = state.fechaInicio)
             Text("Fecha de inicio", style = MaterialTheme.typography.labelLarge)
@@ -152,9 +149,7 @@ fun AddTreatmentScreen(
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
-                modifier = Modifier.fillMaxWidth().then(
-                    Modifier.then(androidx.compose.ui.Modifier)
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             TextButton(onClick = { showDateInicio = true }) { Text("Cambiar fecha de inicio") }
             if (showDateInicio) {
@@ -170,7 +165,6 @@ fun AddTreatmentScreen(
                 ) { DatePicker(state = dateInicioState) }
             }
 
-            // Fecha fin (optional)
             var showDateFin by remember { mutableStateOf(false) }
             val dateFinState = rememberDatePickerState()
             TextButton(onClick = { showDateFin = true }) {
@@ -192,7 +186,6 @@ fun AddTreatmentScreen(
                 ) { DatePicker(state = dateFinState) }
             }
 
-            // Stock
             OutlinedTextField(
                 value = state.stockInicial,
                 onValueChange = viewModel::onStockChange,
@@ -202,7 +195,6 @@ fun AddTreatmentScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Instrucciones
             OutlinedTextField(
                 value = state.instrucciones,
                 onValueChange = viewModel::onInstruccionesChange,

@@ -24,8 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
 
 private data class AdminTab(val label: String, val icon: ImageVector)
 
@@ -39,7 +39,7 @@ private val adminTabs = listOf(
 
 @Composable
 fun AdminMainScreen(onLogout: () -> Unit) {
-    val viewModel: AdminViewModel = hiltViewModel()
+    val viewModel: AdminViewModel = koinViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by remember { mutableIntStateOf(0) }
     var showAddTreatment by remember { mutableStateOf(false) }
