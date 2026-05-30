@@ -91,7 +91,7 @@ val viewModelModule = module {
     viewModel { AuthViewModel(get(), get(), get(), get()) }
     viewModel { PatientHomeViewModel(get(), get(), get(), get(), get()) }
     viewModel { AdminViewModel(get(), get(), get(), get(), get()) }
-    viewModel { AddTreatmentViewModel(get(), get(), get()) }
+    viewModel { AddTreatmentViewModel(get(), get(), get(), get(), get()) }
 }
 
 val allModules = listOf(infraModule, databaseModule, repositoryModule, useCaseModule, viewModelModule)

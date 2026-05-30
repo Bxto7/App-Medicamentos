@@ -4,19 +4,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.medicamentos.app.medremind.data.local.entity.TomaProgramadaEntity
 import com.medicamentos.app.medremind.domain.model.Medicamento
+import com.medicamentos.app.medremind.domain.model.Paciente
 import com.medicamentos.app.medremind.domain.usecase.AgregarTratamientoUseCase
 import com.medicamentos.app.medremind.domain.repository.MedicamentoRepository
+import com.medicamentos.app.medremind.domain.usecase.ObtenerPacientesUseCase
+import com.medicamentos.app.medremind.domain.repository.AuthRepository
 import com.medicamentos.app.medremind.notification.NotificationScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
 data class AddTreatmentUiState(
     val medicamentos: List<Medicamento> = emptyList(),
+    val pacientes: List<Paciente> = emptyList(),
     val selectedMedIndex: Int = -1,
+    val selectedPacienteId: String = "",
+    val selectedPacienteNombre: String = "",
     val dosis: String = "",
     val frecuenciaHoras: Int = 8,
     val horarios: List<String> = listOf("08:00", "14:00", "20:00"),
@@ -32,7 +40,9 @@ data class AddTreatmentUiState(
 class AddTreatmentViewModel(
     private val agregarTratamiento: AgregarTratamientoUseCase,
     private val notificationScheduler: NotificationScheduler,
-    medicamentoRepository: MedicamentoRepository
+    medicamentoRepository: MedicamentoRepository,
+    private val obtenerPacientes: ObtenerPacientesUseCase,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddTreatmentUiState())
@@ -44,6 +54,20 @@ class AddTreatmentViewModel(
                 _uiState.update { it.copy(medicamentos = list) }
             }
         }
+        viewModelScope.launch {
+            val medicoId = authRepository.getUserId().filterNotNull().first()
+            obtenerPacientes(medicoId).collect { list ->
+                _uiState.update { it.copy(pacientes = list) }
+            }
+        }
+    }
+
+    fun preseleccionarPaciente(id: String, nombre: String) {
+        _uiState.update { it.copy(selectedPacienteId = id, selectedPacienteNombre = nombre) }
+    }
+
+    fun selectPaciente(paciente: Paciente) {
+        _uiState.update { it.copy(selectedPacienteId = paciente.id, selectedPacienteNombre = paciente.nombre) }
     }
 
     fun selectMedicamento(index: Int) {
@@ -73,8 +97,12 @@ class AddTreatmentViewModel(
         _uiState.update { it.copy(horarios = list) }
     }
 
-    fun save(pacienteId: String) {
+    fun save() {
         val state = _uiState.value
+        if (state.selectedPacienteId.isBlank()) {
+            _uiState.update { it.copy(error = "Selecciona un paciente") }
+            return
+        }
         val med = state.medicamentos.getOrNull(state.selectedMedIndex)
         if (med == null) { _uiState.update { it.copy(error = "Selecciona un medicamento") }; return }
         val stock = state.stockInicial.toIntOrNull() ?: 0
@@ -82,7 +110,7 @@ class AddTreatmentViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             val result = agregarTratamiento(
-                pacienteId = pacienteId,
+                pacienteId = state.selectedPacienteId,
                 medicamentoId = med.id,
                 medicamentoNombre = med.nombre,
                 dosis = state.dosis.ifBlank { med.dosis },

@@ -20,6 +20,7 @@ interface AuthRepository {
         avatarId: Int
     ): Result<Usuario>
     suspend fun logout()
+    suspend fun updateNombre(nombre: String)
     fun getUserId(): Flow<String?>
     fun getRol(): Flow<Rol?>
     fun getNombre(): Flow<String?>
@@ -35,6 +36,7 @@ interface PacienteRepository {
 
 interface MedicamentoRepository {
     fun getAll(): Flow<List<Medicamento>>
+    suspend fun add(nombre: String, dosis: String, via: String, instrucciones: String)
 }
 
 interface TratamientoRepository {

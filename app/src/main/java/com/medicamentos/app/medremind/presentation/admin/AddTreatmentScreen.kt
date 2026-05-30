@@ -14,7 +14,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -52,14 +51,18 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTreatmentScreen(
-    pacienteId: String,
-    pacienteNombre: String,
+    pacienteId: String = "",
+    pacienteNombre: String = "",
     onSaved: () -> Unit,
     onBack: () -> Unit,
     viewModel: AddTreatmentViewModel = koinViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val dateFmt = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+    LaunchedEffect(pacienteId) {
+        if (pacienteId.isNotBlank()) viewModel.preseleccionarPaciente(pacienteId, pacienteNombre)
+    }
 
     LaunchedEffect(state.success) {
         if (state.success) onSaved()
@@ -71,7 +74,8 @@ fun AddTreatmentScreen(
                 title = {
                     Column {
                         Text("Agregar tratamiento")
-                        Text(pacienteNombre, style = MaterialTheme.typography.bodySmall)
+                        if (state.selectedPacienteNombre.isNotBlank())
+                            Text(state.selectedPacienteNombre, style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Volver") } }
@@ -88,6 +92,30 @@ fun AddTreatmentScreen(
         ) {
             Spacer(Modifier.height(4.dp))
 
+            // Selector de paciente (solo si no viene preseleccionado)
+            if (pacienteId.isBlank()) {
+                var pacExpanded by remember { mutableStateOf(false) }
+                Text("Paciente *", style = MaterialTheme.typography.labelLarge)
+                ExposedDropdownMenuBox(expanded = pacExpanded, onExpandedChange = { pacExpanded = it }) {
+                    OutlinedTextField(
+                        value = state.selectedPacienteNombre.ifBlank { "Seleccionar paciente" },
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pacExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor()
+                    )
+                    ExposedDropdownMenu(expanded = pacExpanded, onDismissRequest = { pacExpanded = false }) {
+                        state.pacientes.forEach { paciente ->
+                            DropdownMenuItem(
+                                text = { Column { Text(paciente.nombre); Text(paciente.diagnostico, style = MaterialTheme.typography.labelSmall) } },
+                                onClick = { viewModel.selectPaciente(paciente); pacExpanded = false }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Selector de medicamento
             var medExpanded by remember { mutableStateOf(false) }
             val selectedMedName = state.medicamentos.getOrNull(state.selectedMedIndex)?.nombre ?: "Seleccionar medicamento"
             Text("Medicamento *", style = MaterialTheme.typography.labelLarge)
@@ -118,12 +146,11 @@ fun AddTreatmentScreen(
             )
 
             Text("Frecuencia", style = MaterialTheme.typography.labelLarge)
-            val frecOptions = listOf(6 to "Cada 6h", 8 to "Cada 8h", 12 to "Cada 12h", 24 to "Cada 24h")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                frecOptions.forEach { (horas, label) ->
+                listOf(6 to "Cada 6h", 8 to "Cada 8h", 12 to "Cada 12h", 24 to "Cada 24h").forEach { (h, label) ->
                     FilterChip(
-                        selected = state.frecuenciaHoras == horas,
-                        onClick = { viewModel.setFrecuencia(horas) },
+                        selected = state.frecuenciaHoras == h,
+                        onClick = { viewModel.setFrecuencia(h) },
                         label = { Text(label, style = MaterialTheme.typography.labelSmall) }
                     )
                 }
@@ -144,14 +171,9 @@ fun AddTreatmentScreen(
             var showDateInicio by remember { mutableStateOf(false) }
             val dateInicioState = rememberDatePickerState(initialSelectedDateMillis = state.fechaInicio)
             Text("Fecha de inicio", style = MaterialTheme.typography.labelLarge)
-            OutlinedTextField(
-                value = dateFmt.format(Date(state.fechaInicio)),
-                onValueChange = {},
-                readOnly = true,
-                trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            TextButton(onClick = { showDateInicio = true }) { Text("Cambiar fecha de inicio") }
+            TextButton(onClick = { showDateInicio = true }) {
+                Text(dateFmt.format(Date(state.fechaInicio)))
+            }
             if (showDateInicio) {
                 DatePickerDialog(
                     onDismissRequest = { showDateInicio = false },
@@ -171,7 +193,9 @@ fun AddTreatmentScreen(
                 Text(if (state.fechaFin != null) "Fin: ${dateFmt.format(Date(state.fechaFin!!))}" else "Agregar fecha de fin (opcional)")
             }
             if (state.fechaFin != null) {
-                TextButton(onClick = { viewModel.setFechaFin(null) }) { Text("Quitar fecha de fin", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = { viewModel.setFechaFin(null) }) {
+                    Text("Quitar fecha de fin", color = MaterialTheme.colorScheme.error)
+                }
             }
             if (showDateFin) {
                 DatePickerDialog(
@@ -208,7 +232,7 @@ fun AddTreatmentScreen(
             }
 
             Button(
-                onClick = { viewModel.save(pacienteId) },
+                onClick = { viewModel.save() },
                 enabled = !state.isLoading && state.selectedMedIndex >= 0,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {

@@ -40,6 +40,19 @@ class MedicamentoRepositoryImpl(
 ) : MedicamentoRepository {
     override fun getAll(): Flow<List<Medicamento>> =
         medicamentoDao.getAll().map { list -> list.map { it.toDomain() } }
+
+    override suspend fun add(nombre: String, dosis: String, via: String, instrucciones: String) {
+        medicamentoDao.insert(
+            com.medicamentos.app.medremind.data.local.entity.MedicamentoEntity(
+                id = UUID.randomUUID().toString(),
+                nombre = nombre.trim(),
+                dosis = dosis.trim(),
+                via = via.trim(),
+                instrucciones = instrucciones.trim(),
+                fotoUrl = null
+            )
+        )
+    }
 }
 
 class TratamientoRepositoryImpl(

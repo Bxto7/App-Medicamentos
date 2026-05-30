@@ -29,6 +29,10 @@ class SessionManager(private val context: Context) {
         context.dataStore.edit { it.clear() }
     }
 
+    suspend fun updateNombre(nombre: String) {
+        context.dataStore.edit { prefs -> prefs[KEY_NOMBRE] = nombre }
+    }
+
     fun getUserId(): Flow<String?> = context.dataStore.data.map { it[KEY_USER_ID] }
 
     fun getRol(): Flow<Rol?> = context.dataStore.data.map { prefs ->

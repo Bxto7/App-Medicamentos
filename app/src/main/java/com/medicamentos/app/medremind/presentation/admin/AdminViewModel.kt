@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 data class AdminUiState(
@@ -35,9 +36,9 @@ data class AdminUiState(
 )
 
 class AdminViewModel(
-    authRepository: AuthRepository,
+    private val authRepository: AuthRepository,
     private val obtenerPacientes: ObtenerPacientesUseCase,
-    medicamentoRepository: MedicamentoRepository,
+    private val medicamentoRepository: MedicamentoRepository,
     private val tratamientoRepository: TratamientoRepository,
     private val tomaRepository: TomaRepository
 ) : ViewModel() {
@@ -81,4 +82,21 @@ class AdminViewModel(
 
     fun onSearchChange(query: String) = _searchQuery.update { query }
     fun selectPaciente(paciente: Paciente) = _selectedPaciente.update { paciente }
+    fun clearSelectedPaciente() = _selectedPaciente.update { null }
+
+    fun addMedicamento(nombre: String, dosis: String, via: String, instrucciones: String, onResult: (Boolean) -> Unit) {
+        if (nombre.isBlank() || dosis.isBlank() || via.isBlank()) { onResult(false); return }
+        viewModelScope.launch {
+            runCatching { medicamentoRepository.add(nombre, dosis, via, instrucciones) }
+                .fold(onSuccess = { onResult(true) }, onFailure = { onResult(false) })
+        }
+    }
+
+    fun updateNombre(nombre: String, onResult: (Boolean) -> Unit) {
+        if (nombre.isBlank()) { onResult(false); return }
+        viewModelScope.launch {
+            runCatching { authRepository.updateNombre(nombre) }
+                .fold(onSuccess = { onResult(true) }, onFailure = { onResult(false) })
+        }
+    }
 }

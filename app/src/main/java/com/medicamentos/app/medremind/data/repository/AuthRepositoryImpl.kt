@@ -8,6 +8,7 @@ import com.medicamentos.app.medremind.domain.model.Rol
 import com.medicamentos.app.medremind.domain.model.Usuario
 import com.medicamentos.app.medremind.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -53,6 +54,12 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout() = sessionManager.clearSession()
+
+    override suspend fun updateNombre(nombre: String) {
+        val userId = sessionManager.getUserId().first() ?: return
+        usuarioDao.updateNombre(userId, nombre.trim())
+        sessionManager.updateNombre(nombre.trim())
+    }
 
     override fun getUserId(): Flow<String?> = sessionManager.getUserId()
     override fun getRol(): Flow<Rol?> = sessionManager.getRol()
