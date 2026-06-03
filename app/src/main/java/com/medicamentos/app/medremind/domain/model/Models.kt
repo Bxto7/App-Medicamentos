@@ -9,7 +9,9 @@ data class Usuario(
     val email: String,
     val nombre: String,
     val rol: Rol,
-    val avatarId: Int = 0
+    val avatarId: Int = 0,
+    val telefono: String? = null,
+    val telefonoFamiliar: String? = null
 )
 
 data class Paciente(
@@ -54,7 +56,8 @@ data class PacienteAsociable(
     val usuarioId: String,
     val nombre: String,
     val email: String,
-    val yaAsociado: Boolean
+    val yaAsociado: Boolean,
+    val diagnosticoActual: String = ""
 )
 
 data class TomaProgramada(

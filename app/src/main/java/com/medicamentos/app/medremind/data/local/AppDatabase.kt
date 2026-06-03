@@ -29,7 +29,7 @@ import com.medicamentos.app.medremind.data.local.entity.UsuarioEntity
         RegistroTomaEntity::class,
         MedicoPacienteEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -60,6 +60,18 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                 db.execSQL("ALTER TABLE tratamientos ADD COLUMN medico_id TEXT NOT NULL DEFAULT ''")
                 db.execSQL("ALTER TABLE tratamientos ADD COLUMN medico_nombre TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        /**
+         * v4 -> v5: teléfonos de contacto del paciente (propio y de emergencia)
+         * y diagnóstico principal guardado en la relación médico-paciente.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE usuarios ADD COLUMN telefono TEXT")
+                db.execSQL("ALTER TABLE usuarios ADD COLUMN telefono_familiar TEXT")
+                db.execSQL("ALTER TABLE medico_paciente ADD COLUMN diagnostico TEXT NOT NULL DEFAULT ''")
             }
         }
     }

@@ -30,7 +30,8 @@ data class PacienteAsociableRow(
     val id: String,
     val nombre: String,
     val email: String,
-    val asociado: Int
+    val asociado: Int,
+    val diagnostico: String?
 )
 
 @Dao
@@ -42,10 +43,13 @@ interface MedicoPacienteDao {
     @Query("DELETE FROM medico_paciente WHERE medico_id = :medicoId AND paciente_id = :pacienteId")
     suspend fun delete(medicoId: String, pacienteId: String)
 
+    @Query("UPDATE medico_paciente SET diagnostico = :diagnostico WHERE medico_id = :medicoId AND paciente_id = :pacienteId")
+    suspend fun updateDiagnostico(medicoId: String, pacienteId: String, diagnostico: String)
+
     @Query(
         """
         SELECT u.id AS id, u.nombre AS nombre, u.email AS email,
-               p.edad AS edad, p.diagnostico AS diagnostico, p.foto_url AS foto_url
+               p.edad AS edad, mp.diagnostico AS diagnostico, p.foto_url AS foto_url
         FROM medico_paciente mp
         JOIN usuarios u ON u.id = mp.paciente_id
         LEFT JOIN pacientes p ON p.id = u.id
@@ -58,12 +62,12 @@ interface MedicoPacienteDao {
     @Query(
         """
         SELECT u.id AS id, u.nombre AS nombre, u.email AS email,
-               p.edad AS edad, p.diagnostico AS diagnostico, p.foto_url AS foto_url
+               p.edad AS edad, mp.diagnostico AS diagnostico, p.foto_url AS foto_url
         FROM medico_paciente mp
         JOIN usuarios u ON u.id = mp.paciente_id
         LEFT JOIN pacientes p ON p.id = u.id
         WHERE mp.medico_id = :medicoId
-          AND (u.nombre LIKE '%' || :query || '%' OR p.diagnostico LIKE '%' || :query || '%')
+          AND (u.nombre LIKE '%' || :query || '%' OR mp.diagnostico LIKE '%' || :query || '%')
         ORDER BY u.nombre ASC
         """
     )
@@ -78,7 +82,11 @@ interface MedicoPacienteDao {
                EXISTS(
                    SELECT 1 FROM medico_paciente mp
                    WHERE mp.medico_id = :medicoId AND mp.paciente_id = u.id
-               ) AS asociado
+               ) AS asociado,
+               (
+                   SELECT mp.diagnostico FROM medico_paciente mp
+                   WHERE mp.medico_id = :medicoId AND mp.paciente_id = u.id
+               ) AS diagnostico
         FROM usuarios u
         WHERE u.rol = 'PACIENTE'
         ORDER BY u.nombre ASC
@@ -88,4 +96,20 @@ interface MedicoPacienteDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM medico_paciente WHERE medico_id = :medicoId AND paciente_id = :pacienteId)")
     suspend fun existeAsociacion(medicoId: String, pacienteId: String): Boolean
+
+    /** Diagnóstico vigente del paciente (el más reciente entre sus médicos), para su perfil. */
+    @Query("SELECT diagnostico FROM medico_paciente WHERE paciente_id = :pacienteId AND diagnostico != '' ORDER BY fecha_asociacion DESC LIMIT 1")
+    fun getDiagnosticoDePaciente(pacienteId: String): Flow<String?>
+
+    /** Médico responsable del paciente (el más reciente que lo asoció), para su perfil. */
+    @Query(
+        """
+        SELECT u.nombre FROM medico_paciente mp
+        JOIN usuarios u ON u.id = mp.medico_id
+        WHERE mp.paciente_id = :pacienteId
+        ORDER BY mp.fecha_asociacion DESC
+        LIMIT 1
+        """
+    )
+    fun getMedicoDePaciente(pacienteId: String): Flow<String?>
 }

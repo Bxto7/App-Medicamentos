@@ -548,7 +548,7 @@ private fun exportarPdf(context: android.content.Context, pacientes: List<Pacien
     val subtitlePaint = Paint().apply { textSize = 14f; isFakeBoldText = true }
     val dateFmt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     var y = 60f
-    canvas.drawText("Reporte de Adherencia — MedRemind", 40f, y, titlePaint); y += 30f
+    canvas.drawText("Reporte de Adherencia — Adherencia360", 40f, y, titlePaint); y += 30f
     canvas.drawText("Médico: $medico", 40f, y, bodyPaint); y += 20f
     canvas.drawText("Generado: ${dateFmt.format(Date())}", 40f, y, bodyPaint); y += 30f
     canvas.drawLine(40f, y, 555f, y, bodyPaint); y += 25f

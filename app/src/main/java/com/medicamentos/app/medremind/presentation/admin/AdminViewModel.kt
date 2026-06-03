@@ -98,10 +98,10 @@ class AdminViewModel(
     fun selectPaciente(paciente: Paciente) = _selectedPaciente.update { paciente }
     fun clearSelectedPaciente() = _selectedPaciente.update { null }
 
-    fun asociarPacientes(pacienteIds: List<String>, onResult: (Boolean) -> Unit) {
+    fun asociarPacientes(diagnosticosPorPaciente: Map<String, String>, onResult: (Boolean) -> Unit) {
         val medicoActual = uiState.value.medicoId
         viewModelScope.launch {
-            asociarPacientesUseCase(medicoActual, pacienteIds)
+            asociarPacientesUseCase(medicoActual, diagnosticosPorPaciente)
                 .fold(onSuccess = { onResult(true) }, onFailure = { onResult(false) })
         }
     }

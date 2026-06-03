@@ -18,7 +18,9 @@ interface AuthRepository {
         email: String,
         password: String,
         rol: Rol,
-        avatarId: Int
+        avatarId: Int,
+        telefono: String?,
+        telefonoFamiliar: String?
     ): Result<Usuario>
     suspend fun logout()
     suspend fun updateNombre(nombre: String)
@@ -39,7 +41,8 @@ interface PacienteRepository {
 interface AsociacionRepository {
     /** Todos los usuarios con rol PACIENTE, marcando los ya asociados al médico. */
     fun getPacientesAsociables(medicoId: String): Flow<List<PacienteAsociable>>
-    suspend fun asociar(medicoId: String, pacienteIds: List<String>)
+    /** Asocia pacientes guardando el diagnóstico principal de cada uno (clave = pacienteId). */
+    suspend fun asociar(medicoId: String, diagnosticosPorPaciente: Map<String, String>)
     suspend fun desasociar(medicoId: String, pacienteId: String)
 }
 

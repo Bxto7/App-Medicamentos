@@ -2,6 +2,7 @@ package com.medicamentos.app.medremind.presentation.patient
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.medicamentos.app.medremind.data.local.dao.MedicoPacienteDao
 import com.medicamentos.app.medremind.data.local.dao.UsuarioDao
 import com.medicamentos.app.medremind.domain.model.EstadoToma
 import com.medicamentos.app.medremind.domain.model.RegistroToma
@@ -28,6 +29,10 @@ import java.util.Calendar
 data class PatientHomeUiState(
     val nombrePaciente: String = "",
     val emailPaciente: String = "",
+    val telefono: String = "",
+    val telefonoFamiliar: String = "",
+    val diagnostico: String = "",
+    val medicoAsignado: String = "",
     val tomasHoy: List<TomaProgramada> = emptyList(),
     val tomadas: Int = 0,
     val total: Int = 0,
@@ -42,18 +47,15 @@ data class PatientHomeUiState(
 
     val tratamientosActivos: Int get() = tratamientos.size
 
+    /** Médico responsable: primero el de la asociación; si no, el de algún tratamiento. */
     val medicoPrincipal: String
-        get() = tratamientos.firstOrNull { it.medicoNombre.isNotBlank() }?.medicoNombre ?: "Sin médico asignado"
+        get() = medicoAsignado.takeIf { it.isNotBlank() }
+            ?: tratamientos.firstOrNull { it.medicoNombre.isNotBlank() }?.medicoNombre
+            ?: "Sin médico asignado"
 
-    val enfermedadBase: String
-        get() {
-            val meds = tratamientos.map { it.medicamentoNombre }.distinct()
-            return when {
-                meds.isEmpty() -> "Sin diagnóstico registrado"
-                meds.size == 1 -> "Tratamiento: ${meds.first()}"
-                else -> "Tratamiento: ${meds.take(2).joinToString(", ")}${if (meds.size > 2) " +${meds.size - 2} más" else ""}"
-            }
-        }
+    /** Diagnóstico que registró el médico al asociar; si no hay, estado vacío claro. */
+    val diagnosticoMostrado: String
+        get() = diagnostico.takeIf { it.isNotBlank() } ?: "Sin diagnóstico registrado"
 }
 
 class PatientHomeViewModel(
@@ -62,38 +64,58 @@ class PatientHomeViewModel(
     private val obtenerHistorial: ObtenerHistorialUseCase,
     private val obtenerMisTratamientos: ObtenerMisTratamientosUseCase,
     private val marcarToma: MarcarTomaUseCase,
-    private val usuarioDao: UsuarioDao
+    private val usuarioDao: UsuarioDao,
+    private val medicoPacienteDao: MedicoPacienteDao
 ) : ViewModel() {
+
+    private data class Perfil(
+        val avatarId: Int = 0,
+        val email: String = "",
+        val telefono: String = "",
+        val telefonoFamiliar: String = ""
+    )
 
     private val userId = authRepository.getUserId().filterNotNull()
     private val nombreFlow = authRepository.getNombre()
-    private val _avatarId = MutableStateFlow(0)
-    private val _email = MutableStateFlow("")
+    private val _perfil = MutableStateFlow(Perfil())
 
     init {
         userId.onEach { id ->
             val entity = usuarioDao.findById(id)
-            _avatarId.value = entity?.avatarId ?: 0
-            _email.value = entity?.email ?: ""
+            _perfil.value = Perfil(
+                avatarId = entity?.avatarId ?: 0,
+                email = entity?.email ?: "",
+                telefono = entity?.telefono ?: "",
+                telefonoFamiliar = entity?.telefonoFamiliar ?: ""
+            )
         }.launchIn(viewModelScope)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<PatientHomeUiState> = combine(userId, nombreFlow, _avatarId, _email) { id, nombre, avatarId, email ->
-        listOf(id, nombre ?: "", avatarId.toString(), email)
-    }.flatMapLatest { parts ->
-        val id = parts[0]; val nombre = parts[1]; val avatarId = parts[2].toInt(); val email = parts[3]
-        combine(obtenerTomasDelDia(id), obtenerHistorial(id), obtenerMisTratamientos(id)) { tomas, historial, tratamientos ->
+    val uiState: StateFlow<PatientHomeUiState> = combine(userId, nombreFlow, _perfil) { id, nombre, perfil ->
+        Triple(id, nombre ?: "", perfil)
+    }.flatMapLatest { (id, nombre, perfil) ->
+        combine(
+            obtenerTomasDelDia(id),
+            obtenerHistorial(id),
+            obtenerMisTratamientos(id),
+            medicoPacienteDao.getDiagnosticoDePaciente(id),
+            medicoPacienteDao.getMedicoDePaciente(id)
+        ) { tomas, historial, tratamientos, diagnostico, medico ->
             PatientHomeUiState(
                 nombrePaciente = nombre,
-                emailPaciente = email,
+                emailPaciente = perfil.email,
+                telefono = perfil.telefono,
+                telefonoFamiliar = perfil.telefonoFamiliar,
+                diagnostico = diagnostico ?: "",
+                medicoAsignado = medico ?: "",
                 tomasHoy = tomas,
                 tomadas = tomas.count { it.estado == EstadoToma.TOMADO },
                 total = tomas.size,
                 historial = historial,
                 tratamientos = tratamientos,
                 pacienteId = id,
-                avatarId = avatarId
+                avatarId = perfil.avatarId
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PatientHomeUiState())

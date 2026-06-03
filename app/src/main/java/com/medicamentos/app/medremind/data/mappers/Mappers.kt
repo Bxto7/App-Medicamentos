@@ -19,7 +19,8 @@ import com.medicamentos.app.medremind.domain.model.Tratamiento
 import com.medicamentos.app.medremind.domain.model.Usuario
 
 fun UsuarioEntity.toDomain() = Usuario(
-    id = id, email = email, nombre = nombre, rol = Rol.valueOf(rol), avatarId = avatarId
+    id = id, email = email, nombre = nombre, rol = Rol.valueOf(rol), avatarId = avatarId,
+    telefono = telefono, telefonoFamiliar = telefonoFamiliar
 )
 
 fun PacienteEntity.toDomain() = Paciente(
@@ -40,7 +41,8 @@ fun PacienteAsociableRow.toDomain() = PacienteAsociable(
     usuarioId = id,
     nombre = nombre,
     email = email,
-    yaAsociado = asociado != 0
+    yaAsociado = asociado != 0,
+    diagnosticoActual = diagnostico ?: ""
 )
 
 fun MedicamentoEntity.toDomain() = Medicamento(

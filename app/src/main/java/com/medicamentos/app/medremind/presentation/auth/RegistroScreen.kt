@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AirlineSeatReclineNormal
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChildCare
+import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.ElderlyWoman
 import androidx.compose.material.icons.filled.Email
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Man
 import androidx.compose.material.icons.filled.MonitorHeart
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Woman
 import androidx.compose.material3.Button
@@ -127,8 +129,8 @@ fun RegistroScreen(
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("MedRemind", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("Recordatorio de medicamentos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Adherencia360", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text("Adherencia y recordatorio de medicamentos", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -206,6 +208,29 @@ fun RegistroScreen(
                     selected = state.rol == Rol.MEDICO,
                     onClick = { viewModel.onRegRolChange(Rol.MEDICO) },
                     label = { Text("Soy médico") }
+                )
+            }
+
+            // Datos de contacto obligatorios solo para pacientes (no se muestran a médicos).
+            if (state.rol == Rol.PACIENTE) {
+                SectionTitle("4. Datos de contacto")
+                OutlinedTextField(
+                    value = state.telefono,
+                    onValueChange = viewModel::onRegTelefonoChange,
+                    label = { Text("Celular del paciente") },
+                    leadingIcon = { Icon(Icons.Default.Phone, null) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = state.telefonoFamiliar,
+                    onValueChange = viewModel::onRegTelefonoFamiliarChange,
+                    label = { Text("Celular de familiar / emergencia") },
+                    leadingIcon = { Icon(Icons.Default.ContactPhone, null) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 

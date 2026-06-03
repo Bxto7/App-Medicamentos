@@ -54,15 +54,18 @@ class AsociacionRepositoryImpl(
     override fun getPacientesAsociables(medicoId: String): Flow<List<PacienteAsociable>> =
         medicoPacienteDao.getPacientesAsociables(medicoId).map { list -> list.map { it.toDomain() } }
 
-    override suspend fun asociar(medicoId: String, pacienteIds: List<String>) {
+    override suspend fun asociar(medicoId: String, diagnosticosPorPaciente: Map<String, String>) {
         val ahora = System.currentTimeMillis()
-        pacienteIds.forEach { pacienteId ->
-            medicoPacienteDao.insert(MedicoPacienteEntity(medicoId, pacienteId, ahora))
+        diagnosticosPorPaciente.forEach { (pacienteId, diagnostico) ->
+            val diag = diagnostico.trim()
+            medicoPacienteDao.insert(MedicoPacienteEntity(medicoId, pacienteId, ahora, diag))
+            // Si ya existía la asociación (insert IGNORE), igual actualizamos el diagnóstico.
+            medicoPacienteDao.updateDiagnostico(medicoId, pacienteId, diag)
             // Sync a Firestore (async, no bloquea)
             firestoreSync {
                 firestore.collection("asociaciones")
                     .document("${medicoId}_${pacienteId}")
-                    .set(mapOf("medicoId" to medicoId, "pacienteId" to pacienteId, "fechaAsociacion" to ahora))
+                    .set(mapOf("medicoId" to medicoId, "pacienteId" to pacienteId, "fechaAsociacion" to ahora, "diagnostico" to diag))
                     .await()
             }
         }

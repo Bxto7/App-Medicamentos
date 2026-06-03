@@ -35,7 +35,9 @@ class RegisterUseCase(private val repo: AuthRepository) {
         password: String,
         confirmPassword: String,
         rol: Rol,
-        avatarId: Int
+        avatarId: Int,
+        telefono: String = "",
+        telefonoFamiliar: String = ""
     ): Result<Usuario> {
         if (nombre.isBlank()) return Result.failure(Exception("Ingresa tu nombre completo"))
         if (email.isBlank()) return Result.failure(Exception("Ingresa tu correo"))
@@ -43,8 +45,25 @@ class RegisterUseCase(private val repo: AuthRepository) {
             return Result.failure(Exception("Correo no válido"))
         if (password.length < 6) return Result.failure(Exception("La contraseña debe tener al menos 6 caracteres"))
         if (password != confirmPassword) return Result.failure(Exception("Las contraseñas no coinciden"))
-        return repo.register(nombre, email, password, rol, avatarId)
+
+        // Los pacientes deben registrar su celular y un contacto de emergencia.
+        if (rol == Rol.PACIENTE) {
+            val telTrim = telefono.trim()
+            val telFamTrim = telefonoFamiliar.trim()
+            if (telTrim.isBlank()) return Result.failure(Exception("Ingresa el número de celular del paciente"))
+            if (!esTelefonoValido(telTrim)) return Result.failure(Exception("El celular del paciente debe tener entre 7 y 15 dígitos"))
+            if (telFamTrim.isBlank()) return Result.failure(Exception("Ingresa el celular de un familiar o contacto de emergencia"))
+            if (!esTelefonoValido(telFamTrim)) return Result.failure(Exception("El celular del familiar debe tener entre 7 y 15 dígitos"))
+        }
+
+        // A los médicos no se les guarda teléfono (los campos no se muestran).
+        val tel = if (rol == Rol.PACIENTE) telefono.trim() else null
+        val telFam = if (rol == Rol.PACIENTE) telefonoFamiliar.trim() else null
+        return repo.register(nombre, email, password, rol, avatarId, tel, telFam)
     }
+
+    private fun esTelefonoValido(valor: String): Boolean =
+        valor.all { it.isDigit() } && valor.length in 7..15
 }
 
 class ObtenerPacientesUseCase(private val repo: PacienteRepository) {
@@ -57,10 +76,10 @@ class ObtenerPacientesAsociablesUseCase(private val repo: AsociacionRepository) 
 }
 
 class AsociarPacientesUseCase(private val repo: AsociacionRepository) {
-    suspend operator fun invoke(medicoId: String, pacienteIds: List<String>): Result<Unit> = runCatching {
+    suspend operator fun invoke(medicoId: String, diagnosticosPorPaciente: Map<String, String>): Result<Unit> = runCatching {
         if (medicoId.isBlank()) error("Médico no identificado")
-        if (pacienteIds.isEmpty()) error("Selecciona al menos un paciente")
-        repo.asociar(medicoId, pacienteIds)
+        if (diagnosticosPorPaciente.isEmpty()) error("Selecciona al menos un paciente")
+        repo.asociar(medicoId, diagnosticosPorPaciente)
     }
 
     suspend fun desasociar(medicoId: String, pacienteId: String): Result<Unit> = runCatching {

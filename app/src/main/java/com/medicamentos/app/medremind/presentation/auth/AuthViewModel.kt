@@ -37,6 +37,8 @@ data class RegisterUiState(
     val confirmPassword: String = "",
     val avatarId: Int = 0,
     val rol: Rol = Rol.PACIENTE,
+    val telefono: String = "",
+    val telefonoFamiliar: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val registroExitoso: Boolean = false
@@ -87,6 +89,9 @@ class AuthViewModel(
     fun onRegConfirmPasswordChange(v: String) = _registerState.update { it.copy(confirmPassword = v, error = null) }
     fun onRegAvatarChange(id: Int) = _registerState.update { it.copy(avatarId = id) }
     fun onRegRolChange(rol: Rol) = _registerState.update { it.copy(rol = rol) }
+    // Solo se aceptan dígitos para los teléfonos (validación de formato numérico).
+    fun onRegTelefonoChange(v: String) = _registerState.update { it.copy(telefono = v.filter { c -> c.isDigit() }, error = null) }
+    fun onRegTelefonoFamiliarChange(v: String) = _registerState.update { it.copy(telefonoFamiliar = v.filter { c -> c.isDigit() }, error = null) }
 
     fun register() {
         val s = _registerState.value
@@ -98,7 +103,9 @@ class AuthViewModel(
                 password = s.password,
                 confirmPassword = s.confirmPassword,
                 rol = s.rol,
-                avatarId = s.avatarId
+                avatarId = s.avatarId,
+                telefono = s.telefono,
+                telefonoFamiliar = s.telefonoFamiliar
             )
             result.fold(
                 onSuccess = { _registerState.update { it.copy(isLoading = false, registroExitoso = true) } },
