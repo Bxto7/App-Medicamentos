@@ -65,7 +65,7 @@ val databaseModule = module {
         Room.databaseBuilder(androidContext(), AppDatabase::class.java, "medremind.db")
             .openHelperFactory(factory)
             .addCallback(SeedDataCallback())
-            .addMigrations(AppDatabase.MIGRATION_3_4)
+            .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5)
             .fallbackToDestructiveMigration()
             .build()
     }
@@ -104,7 +104,7 @@ val useCaseModule = module {
 
 val viewModelModule = module {
     viewModel { AuthViewModel(get(), get(), get(), get()) }
-    viewModel { PatientHomeViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { PatientHomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { AdminViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { AddTreatmentViewModel(get(), get(), get(), get(), get()) }
 }

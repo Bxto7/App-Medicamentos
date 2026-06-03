@@ -43,7 +43,7 @@ fun rememberBiometricLauncher(
             }
             val prompt = BiometricPrompt(activity, executor, callback)
             val promptInfo = BiometricPrompt.PromptInfo.Builder()
-                .setTitle("MedRemind")
+                .setTitle("Adherencia360")
                 .setSubtitle("Accede rápidamente con tu huella o rostro")
                 .setNegativeButtonText("Usar contraseña")
                 .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)

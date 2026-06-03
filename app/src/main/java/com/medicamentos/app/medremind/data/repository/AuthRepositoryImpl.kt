@@ -57,30 +57,39 @@ class AuthRepositoryImpl(
         email: String,
         password: String,
         rol: Rol,
-        avatarId: Int
+        avatarId: Int,
+        telefono: String?,
+        telefonoFamiliar: String?
     ): Result<Usuario> {
         return try {
             val emailNorm = email.trim().lowercase()
+            // Los teléfonos solo aplican a pacientes (contacto propio y de emergencia).
+            val tel = telefono?.trim()?.takeIf { it.isNotBlank() }
+            val telFam = telefonoFamiliar?.trim()?.takeIf { it.isNotBlank() }
 
             // 1. Crear usuario en Firebase Auth
             val authResult = firebaseAuth.createUserWithEmailAndPassword(emailNorm, password).await()
             val uid = authResult.user?.uid ?: throw Exception("Error al crear usuario")
 
-            // 2. Guardar perfil en Firestore (no bloqueante — si falla sin red, Room ya guardó)
+            // 2. Guardar perfil en Firestore SIN bloquear: no usamos await(), porque si
+            // Firestore no confirma (base no creada, reglas, o sin sync) el registro
+            // quedaría colgado pese a que el usuario ya existe en Auth y en Room.
             val userData = mapOf(
                 "nombre" to nombre.trim(),
                 "email" to emailNorm,
                 "rol" to rol.name,
-                "avatarId" to avatarId
+                "avatarId" to avatarId,
+                "telefono" to tel,
+                "telefonoFamiliar" to telFam
             )
-            try { firestore.collection("usuarios").document(uid).set(userData).await() } catch (_: Exception) {}
+            runCatching { firestore.collection("usuarios").document(uid).set(userData) }
 
             // 3. Cachear en Room (sin password hash — la auth la maneja Firebase)
-            val entity = UsuarioEntity(uid, emailNorm, nombre.trim(), "", rol.name, avatarId)
+            val entity = UsuarioEntity(uid, emailNorm, nombre.trim(), "", rol.name, avatarId, tel, telFam)
             usuarioDao.upsert(entity)
 
             sessionManager.saveSession(uid, rol, nombre.trim())
-            Result.success(Usuario(uid, emailNorm, nombre.trim(), rol, avatarId))
+            Result.success(Usuario(uid, emailNorm, nombre.trim(), rol, avatarId, tel, telFam))
 
         } catch (e: Exception) {
             Result.failure(Exception(mapFirebaseError(e.message)))
@@ -120,9 +129,11 @@ class AuthRepositoryImpl(
                 val rol = Rol.valueOf(doc.getString("rol") ?: "PACIENTE")
                 val avatarId = doc.getLong("avatarId")?.toInt() ?: 0
                 val email = doc.getString("email") ?: emailFallback
+                val telefono = doc.getString("telefono")
+                val telefonoFamiliar = doc.getString("telefonoFamiliar")
                 // Actualizar caché local
-                usuarioDao.upsert(UsuarioEntity(uid, email, nombre, "", rol.name, avatarId))
-                Usuario(uid, email, nombre, rol, avatarId)
+                usuarioDao.upsert(UsuarioEntity(uid, email, nombre, "", rol.name, avatarId, telefono, telefonoFamiliar))
+                Usuario(uid, email, nombre, rol, avatarId, telefono, telefonoFamiliar)
             } else {
                 // El documento no existe aún — usar datos locales si los hay
                 val local = usuarioDao.findById(uid) ?: usuarioDao.findByEmail(emailFallback)

@@ -26,8 +26,10 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Notifications
@@ -60,6 +62,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.medicamentos.app.medremind.R
 import com.medicamentos.app.medremind.domain.model.EstadoToma
 import com.medicamentos.app.medremind.domain.model.TomaProgramada
 import com.medicamentos.app.medremind.domain.model.Tratamiento
@@ -87,6 +92,28 @@ fun PatientHomeScreen(viewModel: PatientHomeViewModel) {
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Logo de marca
+        item {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.mipmap.ic_launcher_foreground),
+                    contentDescription = "Adherencia360",
+                    modifier = Modifier.size(44.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Adherencia360",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
         // Saludo + avatar
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -241,7 +268,7 @@ fun TomaCard(toma: TomaProgramada, hora: String, onMarcar: (EstadoToma) -> Unit)
                 }
             } else {
                 Box(Modifier.size(32.dp).clip(CircleShape).background(colorEstado), contentAlignment = Alignment.Center) {
-                    Icon(if (toma.estado == EstadoToma.TOMADO || toma.estado == EstadoToma.TARDE) Icons.Default.Check else Icons.Default.Close, toma.estado.name, Color.White, Modifier.size(20.dp))
+                    Icon(if (toma.estado == EstadoToma.TOMADO || toma.estado == EstadoToma.TARDE) Icons.Default.Check else Icons.Default.Close, toma.estado.name, tint = Color.White, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -631,6 +658,33 @@ fun PatientProfileScreen(
             }
         }
 
+        // ── Diagnóstico actual ───────────────────────
+        item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.MonitorHeart, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Diagnóstico actual", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (state.diagnostico.isBlank()) {
+                        Text(
+                            "Tu médico aún no registró un diagnóstico.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(state.diagnostico, style = MaterialTheme.typography.bodyMedium)
+                        if (state.medicoPrincipal.isNotBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text("Según ${state.medicoPrincipal}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+        }
+
         // ── Información personal ──────────────────────
         item {
             Card(Modifier.fillMaxWidth()) {
@@ -644,6 +698,10 @@ fun PatientProfileScreen(
                     InfoRow(Icons.Default.Person, "Nombre", state.nombrePaciente)
                     if (state.emailPaciente.isNotBlank())
                         InfoRow(Icons.Default.Email, "Correo", state.emailPaciente)
+                    if (state.telefono.isNotBlank())
+                        InfoRow(Icons.Default.Phone, "Celular", state.telefono)
+                    if (state.telefonoFamiliar.isNotBlank())
+                        InfoRow(Icons.Default.ContactPhone, "Emergencia", state.telefonoFamiliar)
                     InfoRow(Icons.Default.Favorite, "Rol", "Paciente")
                     InfoRow(Icons.Default.LocalHospital, "Médico", state.medicoPrincipal)
                 }

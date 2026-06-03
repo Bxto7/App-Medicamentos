@@ -11,7 +11,10 @@ data class UsuarioEntity(
     val nombre: String,
     @ColumnInfo(name = "password_hash") val passwordHash: String,
     val rol: String,
-    @ColumnInfo(name = "avatar_id") val avatarId: Int = 0
+    @ColumnInfo(name = "avatar_id") val avatarId: Int = 0,
+    // Solo se completan para usuarios con rol PACIENTE (contacto propio y de emergencia).
+    @ColumnInfo(name = "telefono") val telefono: String? = null,
+    @ColumnInfo(name = "telefono_familiar") val telefonoFamiliar: String? = null
 )
 
 @Entity(tableName = "pacientes")
@@ -60,7 +63,10 @@ data class TratamientoEntity(
 data class MedicoPacienteEntity(
     @ColumnInfo(name = "medico_id") val medicoId: String,
     @ColumnInfo(name = "paciente_id") val pacienteId: String,
-    @ColumnInfo(name = "fecha_asociacion") val fechaAsociacion: Long
+    @ColumnInfo(name = "fecha_asociacion") val fechaAsociacion: Long,
+    // Diagnóstico principal que el médico registra al asociar al paciente.
+    // Vive en la relación: cada médico puede tener su propio diagnóstico del mismo paciente.
+    @ColumnInfo(name = "diagnostico", defaultValue = "") val diagnostico: String = ""
 )
 
 @Entity(tableName = "tomas_programadas")

@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -57,9 +60,14 @@ fun AssociatePatientsScreen(viewModel: AdminViewModel, onBack: () -> Unit) {
     // IDs marcados localmente. Se inicializa con los ya asociados y se mantiene
     // estable aunque el flujo de la BD vuelva a emitir.
     var seleccionados by remember { mutableStateOf<Set<String>?>(null) }
+    // Diagnóstico por paciente (clave = usuarioId), precargado con el actual.
+    var diagnosticos by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     LaunchedEffect(state.pacientesAsociables) {
         if (seleccionados == null && state.pacientesAsociables.isNotEmpty()) {
             seleccionados = state.pacientesAsociables.filter { it.yaAsociado }.map { it.usuarioId }.toSet()
+            diagnosticos = state.pacientesAsociables
+                .filter { it.diagnosticoActual.isNotBlank() }
+                .associate { it.usuarioId to it.diagnosticoActual }
         }
     }
     val marcados = seleccionados ?: state.pacientesAsociables.filter { it.yaAsociado }.map { it.usuarioId }.toSet()
@@ -75,14 +83,15 @@ fun AssociatePatientsScreen(viewModel: AdminViewModel, onBack: () -> Unit) {
             Button(
                 onClick = {
                     val previos = state.pacientesAsociables.filter { it.yaAsociado }.map { it.usuarioId }.toSet()
-                    val nuevos = (marcados - previos).toList()
                     val removidos = (previos - marcados).toList()
                     removidos.forEach { viewModel.desasociarPaciente(it) }
-                    if (nuevos.isNotEmpty()) {
-                        viewModel.asociarPacientes(nuevos) { ok ->
+                    // Asocia/actualiza todos los marcados con su diagnóstico (alta y edición).
+                    val diagPorPaciente = marcados.associateWith { (diagnosticos[it] ?: "").trim() }
+                    if (diagPorPaciente.isNotEmpty()) {
+                        viewModel.asociarPacientes(diagPorPaciente) { ok ->
                             Toast.makeText(
                                 context,
-                                if (ok) "Pacientes asociados" else "No se pudo asociar",
+                                if (ok) "Pacientes guardados" else "No se pudo guardar",
                                 Toast.LENGTH_SHORT
                             ).show()
                             if (ok) onBack()
@@ -94,7 +103,12 @@ fun AssociatePatientsScreen(viewModel: AdminViewModel, onBack: () -> Unit) {
                         onBack()
                     }
                 },
-                modifier = Modifier.fillMaxWidth().padding(16.dp).height(50.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .height(52.dp)
             ) {
                 Text("Guardar asociaciones")
             }
@@ -125,33 +139,45 @@ fun AssociatePatientsScreen(viewModel: AdminViewModel, onBack: () -> Unit) {
             }
             items(state.pacientesAsociables, key = { it.usuarioId }) { paciente ->
                 val checked = paciente.usuarioId in marcados
-                Row(
-                    Modifier.fillMaxWidth().clickable {
-                        seleccionados = if (checked) marcados - paciente.usuarioId else marcados + paciente.usuarioId
-                    }.padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
+                Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth().clickable {
+                            seleccionados = if (checked) marcados - paciente.usuarioId else marcados + paciente.usuarioId
+                        },
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            paciente.nombre.firstOrNull()?.uppercase() ?: "?",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        Box(
+                            Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                paciente.nombre.firstOrNull()?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(paciente.nombre, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                            Text(paciente.email, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Checkbox(
+                            checked = checked,
+                            onCheckedChange = { isChecked ->
+                                seleccionados = if (isChecked) marcados + paciente.usuarioId else marcados - paciente.usuarioId
+                            }
                         )
                     }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(paciente.nombre, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
-                        Text(paciente.email, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // Diagnóstico principal: solo visible para el paciente marcado.
+                    if (checked) {
+                        OutlinedTextField(
+                            value = diagnosticos[paciente.usuarioId] ?: "",
+                            onValueChange = { diagnosticos = diagnosticos + (paciente.usuarioId to it) },
+                            label = { Text("Diagnóstico principal") },
+                            singleLine = false,
+                            modifier = Modifier.fillMaxWidth().padding(start = 56.dp, top = 4.dp, end = 8.dp)
+                        )
                     }
-                    Checkbox(
-                        checked = checked,
-                        onCheckedChange = { isChecked ->
-                            seleccionados = if (isChecked) marcados + paciente.usuarioId else marcados - paciente.usuarioId
-                        }
-                    )
                 }
             }
             item { Spacer(Modifier.height(80.dp)) }
