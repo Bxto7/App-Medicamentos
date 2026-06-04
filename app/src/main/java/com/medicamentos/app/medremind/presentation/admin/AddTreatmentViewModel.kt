@@ -81,20 +81,42 @@ class AddTreatmentViewModel(
     fun setFechaInicio(ms: Long) = _uiState.update { it.copy(fechaInicio = ms) }
     fun setFechaFin(ms: Long?) = _uiState.update { it.copy(fechaFin = ms) }
 
+    /** Cambiar la frecuencia recalcula todos los horarios manteniendo la primera toma. */
     fun setFrecuencia(horas: Int) {
-        val defaultHorarios = when (horas) {
-            6 -> listOf("06:00", "12:00", "18:00", "00:00")
-            8 -> listOf("08:00", "14:00", "20:00")
-            12 -> listOf("08:00", "20:00")
-            else -> listOf("08:00")
-        }
-        _uiState.update { it.copy(frecuenciaHoras = horas, horarios = defaultHorarios) }
+        val primera = _uiState.value.horarios.firstOrNull()?.takeIf { it.isNotBlank() } ?: "08:00"
+        _uiState.update { it.copy(frecuenciaHoras = horas, horarios = calcularHorarios(primera, horas)) }
     }
 
-    fun updateHorario(index: Int, value: String) {
-        val list = _uiState.value.horarios.toMutableList()
-        if (index < list.size) list[index] = value
-        _uiState.update { it.copy(horarios = list) }
+    /** Cambiar la hora de la primera toma recalcula automáticamente las siguientes. */
+    fun setPrimeraHora(value: String) {
+        // Permitir edición libre del texto; solo recalcular si es una hora válida HH:mm.
+        val esValida = value.matches(Regex("^([01]\\d|2[0-3]):[0-5]\\d$"))
+        if (esValida) {
+            _uiState.update { it.copy(horarios = calcularHorarios(value, it.frecuenciaHoras)) }
+        } else {
+            // Reflejar el texto parcial en la primera posición sin tocar el resto.
+            _uiState.update {
+                val list = it.horarios.toMutableList()
+                if (list.isEmpty()) list.add(value) else list[0] = value
+                it.copy(horarios = list)
+            }
+        }
+    }
+
+    /**
+     * Genera la lista de horarios a partir de la primera toma y la frecuencia.
+     * Ej: primera "08:00", cada 6h → ["08:00", "14:00", "20:00", "02:00"].
+     */
+    private fun calcularHorarios(primeraHora: String, frecuenciaHoras: Int): List<String> {
+        val parts = primeraHora.split(":")
+        val h = parts.getOrNull(0)?.toIntOrNull()?.coerceIn(0, 23) ?: 8
+        val m = parts.getOrNull(1)?.toIntOrNull()?.coerceIn(0, 59) ?: 0
+        val inicioMin = h * 60 + m
+        val dosisPorDia = (24 / frecuenciaHoras).coerceAtLeast(1)
+        return (0 until dosisPorDia).map { i ->
+            val t = (inicioMin + i * frecuenciaHoras * 60) % (24 * 60)
+            "%02d:%02d".format(t / 60, t % 60)
+        }
     }
 
     fun save() {

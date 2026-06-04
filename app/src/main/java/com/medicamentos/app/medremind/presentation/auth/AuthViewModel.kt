@@ -27,6 +27,7 @@ data class AuthUiState(
 data class SessionState(
     val isLoggedIn: Boolean = false,
     val rol: Rol? = null,
+    val nombre: String = "",
     val isReady: Boolean = false
 )
 
@@ -59,9 +60,10 @@ class AuthViewModel(
 
     val sessionState: StateFlow<SessionState> = combine(
         authRepository.isLoggedIn(),
-        authRepository.getRol()
-    ) { isLoggedIn, rol ->
-        SessionState(isLoggedIn = isLoggedIn, rol = rol, isReady = true)
+        authRepository.getRol(),
+        authRepository.getNombre()
+    ) { isLoggedIn, rol, nombre ->
+        SessionState(isLoggedIn = isLoggedIn, rol = rol, nombre = nombre ?: "", isReady = true)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SessionState())
 
     fun onEmailChange(value: String) = _uiState.update { it.copy(email = value, error = null) }
