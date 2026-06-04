@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,7 +66,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTreatmentScreen(
     pacienteId: String = "",
@@ -174,13 +172,19 @@ fun AddTreatmentScreen(
             SectionCard(Icons.Default.Schedule, "Frecuencia y horarios") {
                 Text("¿Cada cuánto se toma?", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(6.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(6 to "Cada 6h", 8 to "Cada 8h", 12 to "Cada 12h", 24 to "Cada 24h").forEach { (h, label) ->
-                        FilterChip(
-                            selected = state.frecuenciaHoras == h,
-                            onClick = { viewModel.setFrecuencia(h) },
-                            label = { Text(label, style = MaterialTheme.typography.labelMedium) }
-                        )
+                val frecuencias = listOf(6 to "Cada 6h", 8 to "Cada 8h", 12 to "Cada 12h", 24 to "Cada 24h")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    frecuencias.chunked(2).forEach { fila ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            fila.forEach { (h, label) ->
+                                FilterChip(
+                                    selected = state.frecuenciaHoras == h,
+                                    onClick = { viewModel.setFrecuencia(h) },
+                                    label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -207,16 +211,20 @@ fun AddTreatmentScreen(
                 Spacer(Modifier.height(10.dp))
                 Text("Tomas del día (${state.horarios.size})", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(6.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.horarios.forEach { hora ->
-                        Box(
-                            Modifier.clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 14.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Schedule, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.size(4.dp))
-                                Text(hora, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.horarios.chunked(3).forEach { fila ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            fila.forEach { hora ->
+                                Box(
+                                    Modifier.clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 14.dp, vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Schedule, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(Modifier.size(4.dp))
+                                        Text(hora, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
                             }
                         }
                     }
